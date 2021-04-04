@@ -30,7 +30,7 @@
 
 针对不同的业务场景选择合适的 SQL/NoSQL/NewSQL 数据库，微服务，云原生的场景下，合理的数据建模，选择合理的字段，索引，外键等，这也是本章讨论的重点。
 
-# Nav | 关联导航
+## NGTE Nav | 关联导航
 
 - 数据库理论及 NoSQL 数据库、数据仓库、大数据处理等内容参考《[Database-Series](https://github.com/wx-chevalier/Database-Series?q=)》。
 
