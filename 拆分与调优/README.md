@@ -1,6 +1,6 @@
 # 关系型数据库调优
 
-本章讨论关系型数据库调优相关内容，其向上承接了《[DistributedSystem-Series](https://github.com/wx-chevalier/DistributedSystem-Series?q=)》等相关内容。
+> 本章讨论关系型数据库调优相关内容，其向上承接了《[DistributedSystem-Series](https://github.com/wx-chevalier/DistributedSystem-Series?q=)》等相关内容。
 
 # 数据库分拆
 
