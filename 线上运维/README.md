@@ -15,7 +15,7 @@ ADD UNIQUE KEY `uk_user_account_id` (`crew_id`,`user_account_id`,`deletion_flag`
 ADD KEY `idx_user_account_id` (`user_account_id`);
 ```
 
-执行结果发现现有数据库中违反规则的数据都被删除了。在 binlog 中可以发现如下的踪迹：
+执行结果发现现有数据库中违反规则的数据都被删除了。在 Binlog 中可以发现如下的踪迹：
 
 ```sh
 #191025 15:00:40 server id 199514850 end_log_pos 290 Query thread_id=2513873 exec_time=1 error_code=0

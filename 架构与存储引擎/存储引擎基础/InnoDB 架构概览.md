@@ -4,7 +4,7 @@ InnoDB 是事务安全的存储引擎，设计上借鉴了很多 Oracle 的架�
 
 # Memory Architecture | 内存架构
 
-InnoDB 的内存主要有以下几个部分组成：缓冲池 (buffer pool)、重做日志缓冲池(redo log buffer）以及额外的内存池（additional memory pool），如下图所示：
+InnoDB 的内存主要有以下几个部分组成：缓冲池 (buffer pool)、重做日志缓冲池(Redo Log buffer）以及额外的内存池（additional memory pool），如下图所示：
 
 ![](https://i.postimg.cc/yY9sfR7s/image.png)
 
