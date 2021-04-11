@@ -1,0 +1,13 @@
+# 数据库索引
+
+在 《[MySQL-Series/索引优化](https://github.com/wx-chevalier/MySQL-Series?q=)》一节中我们讨论了 MySQL 中索引的类型与使用，InnoDB 使用了 B+树索引模型，所以数据都是存储在 B+树中的。每一个索引在 InnoDB 里面对应一棵 B+树。索引类型分为主键索引（也被称为聚簇索引）和非主键索引，主键索引的叶子节点存的是整行数据，非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引。
+
+![主键索引与非主键索引](https://pic.imgdb.cn/item/6072ab198322e6675c8f6f00.jpg)
+
+- 如果语句是 `select _ from T where ID=500`，即主键查询方式，则只需要搜索 ID 这棵 B+树；
+- 如果语句是 `select _ from T where k=5`，即普通索引查询方式，则需要先搜索 k 索引树，得到 ID 的值为 500，再到 ID 索引树搜索一次。这个过程称为回表。
+- 基于非主键索引的查询需要多扫描一棵索引树。因此，我们在应用中应该尽量使用主键查询
+
+# Links
+
+- https://zhuanlan.zhihu.com/p/81273236 面试官：为什么 MySQL 的索引要使用 B+树，而不是其它树？比如 B 树？
