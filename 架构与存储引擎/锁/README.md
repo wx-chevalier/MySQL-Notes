@@ -1,5 +1,7 @@
 # 锁
 
+# 根据范围的锁分类
+
 根据加锁的范围，MySQL 里面的锁大致可以分成全局锁、表级锁和行锁三类。其中：
 
 - 全局锁：对整个数据库实例加锁，常用于全库逻辑备份。
@@ -34,61 +36,3 @@ MySQL 里面表级锁有两种，一种是表锁，一种是元数据锁(meta da
 MySQL 的行锁是在引擎层由各个引擎自己实现的。但并不是所有的引擎都支持行锁，比如 MyISAM 引擎就不支持行锁。不支持行锁意味着并发控制只能使用表锁，对于这种引擎的表，同一张表上任何时刻只能有一个更新在执行，这就会影响到业务并发度。InnoDB 是支持行锁的，这也是 MyISAM 被 InnoDB 替代的重要原因之一。在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放。
 
 当并发系统中不同线程出现循环资源依赖，涉及的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。譬如事务 A 在等待事务 B 释放 id=2 的行锁，而事务 B 在等待事务 A 释放 id=1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放，就是进入了死锁状态。
-
-# 共享锁与排他锁
-
-从锁的策略上来看，InnoDB 还实现了共享锁（S）与排他锁（X)。
-
-- 共享锁（S）：共享锁允许一个事务去读一行，阻止其他事务获得相同数据集的排他锁；
-- 排他锁（X)：排他锁则允许获得排他锁的事务更新数据，阻止其他事务取得相同数据集的共享读锁和排他写锁。
-
-Innodb 引擎中，对于 insert、update、delete，InnoDB 会自动给涉及的数据加排他锁（X）；对于一般的 Select 语句，InnoDB 不会加任何锁。事务可以通过以下语句给显示加共享锁或排他锁：
-
-```sql
-SELECT ... LOCK IN SHARE MODE; -- 共享锁
-SELECT ... FOR UPDATE; -- 排他锁
-```
-
-另外，为了允许行锁和表锁共存，实现多粒度锁机制，InnoDB 还有两种内部使用的意向锁（Intention Locks），这两种意向锁都是表锁。
-
-- 意向共享锁（IS）：事务打算给数据行加行共享锁，事务在给一个数据行加共享锁前必须先取得该表的 IS 锁。
-- 意向排他锁（IX）：事务打算给数据行加行排他锁，事务在给一个数据行加排他锁前必须先取得该表的 IX 锁。
-
-```sql
-mysql> set autocommit = 0;
-
-/* 共享锁 */
--- 当前 session 对 actor_id=178 的记录加 share mode 的共享锁：
-mysql> select actor_id,first_name,last_name from actor where actor_id = 178 lock in share mode;
-
--- 当前session对锁定的记录进行更新操作，等待锁：
-mysql> update actor set last_name = 'MONROE T' where actor_id = 178;
-
--- 其他session仍然可以查询记录，并也可以对该记录加share mode的共享锁：
-mysql> select actor_id,first_name,last_name from actor where actor_id = 178lock in share mode;
-
--- 其他session也对该记录进行更新操作，则会导致死锁退出：
-mysql> update actor set last_name = 'MONROE T' where actor_id = 178;
--- ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
-
--- 获得锁后，可以成功更新：
--- Query OK, 1 row affected (17.67 sec)
-
-/* 排他锁 */
--- 当前session对actor_id=178的记录加for update的排它锁：
-mysql> select actor_id,first_name,last_name from actor where actor_id = 178 for update;
-
--- 其他session可以查询该记录，但是不能对该记录加共享锁，会等待获得锁：
-mysql> select actor_id,first_name,last_name from actor where actor_id = 178 for update;
-
--- 当前session可以对锁定的记录进行更新操作，更新后释放锁：
-mysql> update actor set last_name = 'MONROE T' where actor_id = 178;
-mysql> commit;
-
--- 其他session获得锁，得到其他session提交的记录：
-mysql> select actor_id,first_name,last_name from actor where actor_id = 178 for update;
-```
-
-值得一提的是，普通的查询操作都是非锁定读，会基于 MVCC 来实现多版本并发控制。如果存在事务冲突，会利用 Undo Log 获取新事务操作之前的镜像返回，在读已提交的隔离级别下，会获取新事务修改前的最新的一份已经提交的数据，而在可重复读的隔离级别下，会读取该事务开始时的数据版本。当有多个事务并发操作同一行记录时，该记录会同时存在多个 Undo Log。
-
-而加锁之后就变成了锁定读，所有的锁定读都是当前读，也就是读取当前记录的最新版本，不会利用 Undo Log 读取镜像。另外所有的 insert、update、delete 操作也是当前读，update、delete 会在更新之前进行一次当前读，然后加锁，而 insert 因为会触发唯一索引检测，也会包含一个当前读。
