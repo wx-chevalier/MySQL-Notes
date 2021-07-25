@@ -2,6 +2,8 @@
 
 InnoDB 是事务安全的存储引擎，设计上借鉴了很多 Oracle 的架构思想，一般而言，在 OLTP 应用中，InnoDB 应该作为核心应用表的首先存储引擎。InnoDB 是由第三方的 Innobase Oy 公司开发，现已被 Oracle 收购，创始人是 Heikki Tuuri，芬兰赫尔辛基人，和著名的 Linux 创始人 Linus 是校友。
 
+InnoDB 的整体架构分为两个部分：内存架构和磁盘架构，如图：
+
 # Memory Architecture | 内存架构
 
 InnoDB 的内存主要有以下几个部分组成：缓冲池 (buffer pool)、重做日志缓冲池(Redo Log buffer）以及额外的内存池（additional memory pool），如下图所示：

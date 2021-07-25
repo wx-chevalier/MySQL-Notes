@@ -54,3 +54,5 @@ MySQL 的优化主要分为表结构优化（Scheme optimization）和查询优�
 - https://zhuanlan.zhihu.com/p/72071609
 
 - https://mp.weixin.qq.com/s/UkQ31grdLZJttlNAPFs9cg
+
+- https://mp.weixin.qq.com/s/3yki4dljbLMgnOVrsqbk8w 慢 SQL 排查思路？就这。
