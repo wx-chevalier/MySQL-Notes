@@ -102,7 +102,8 @@
         
     - [5.4 读写分离 [1]](/5.数据库拆分/读写分离/README.md)
       - [5.4.1 读写分离](/5.数据库拆分/读写分离/读写分离.md)
-  - 6 999.参考资料 [1]
-    - [6.1 BastJavaer MySQL 系列](/999.参考资料/BastJavaer%20MySQL%20系列/README.md)
+  - 6 999.参考资料 [2]
+    - [6.1 heibaiying MySQL 基础](/999.参考资料/2020-heibaiying-MySQL%20基础.md)
+    - [6.2 BastJavaer MySQL 系列](/999.参考资料/BastJavaer%20MySQL%20系列/README.md)
       
   - [7 INTRODUCTION](/INTRODUCTION.md)
