@@ -6,7 +6,7 @@
 
 可以实现增删改查的数据结构非常多，包括：哈希表、二叉搜索树、AVL、红黑树、B 树、B+树等，这些都是可以作为索引的候选数据结构。结合 MySQL 的实际情况：磁盘和内存交互、随机磁盘 IO、排序和范围查找、增删改的复杂度等等，综合考量之下 B+ 树脱颖而出。MyISAM 是将数据和索引分开存储的，InnoDB 存储引擎的数据和索引没有分开存储，这也就是为什么有人说 Innodb 索引即数据，数据即索引，如图：
 
-![InnoDB 文件示意](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd19ad5132923bf8b864cd.jpg)
+![InnoDB 文件示意](https://assets.ng-tech.icu/superbed/2021/07/25/60fd19ad5132923bf8b864cd.jpg)
 
 - InnoDB 可以看做是聚集索引，因为它的 B+ 树的叶结点包含了完整的数据记录。InnoDB 的数据文件本身就是索引文件，表数据文件本身就是按 B+Tree 组织的一个索引结构，这棵树的叶节点 data 域保存了完整的数据记录。这个索引的 key 是数据表的主键，因此 InnoDB 表数据文件本身就是主索引。InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。换句话说，InnoDB 的所有辅助索引都引用主键作为 data 域。
 
@@ -24,7 +24,7 @@
 
 聚簇索引将索引和数据完美地融合在一起，是每个 Innodb 表都会有的一个特殊索引，一般来说是借助于表的主键来构建的 B+树。假设我们有 student 表，将 id 作为主键索引，那么聚簇索引的 B+树结构，如图：
 
-![聚簇索引](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd1b355132923bf8bf07ac.jpg)
+![聚簇索引](https://assets.ng-tech.icu/superbed/2021/07/25/60fd1b355132923bf8bf07ac.jpg)
 
 -非叶子节点不存数据，只有主键和相关指针
 
@@ -47,7 +47,7 @@
 
 普通索引的叶子节点中存放的是二级索引值和主键键值，非叶子节点和叶子节点都没有存储整行数据值。假设我们有 student 表，将 name 作为二级索引，那么普通索引的 B+树结构，如图：
 
-![普通索引示意图](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd1b9e5132923bf8c0c26e.jpg)
+![普通索引示意图](https://assets.ng-tech.icu/superbed/2021/07/25/60fd1b9e5132923bf8c0c26e.jpg)
 
 由于普通索引的叶子节点没有存储行数据，如果通过普通索引来查找非二级索引值，需要分为两步：
 
@@ -69,4 +69,4 @@
 
 # Links
 
-- https://mp.weixin.qq.com/s/os-kSr3NQkj4B7hkc2sZ3g 原来这就是MySQL中的索引  
+- https://mp.weixin.qq.com/s/os-kSr3NQkj4B7hkc2sZ3g 原来这就是 MySQL 中的索引
