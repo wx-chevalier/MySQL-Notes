@@ -22,11 +22,13 @@
       - [1.5.2 数值类型](/01.SQL/数据类型/数值类型.md)
       - [1.5.3 时间与日期](/01.SQL/数据类型/时间与日期.md)
   - [2 02.表与查询优化 [6]](/02.表与查询优化/README.md)
-    - [2.1 01.性能分析 [1]](/02.表与查询优化/01.性能分析/README.md)
-      - 2.1.1 explain [2]
-        - 2.1.1.1 99.参考资料 [1]
-          - [2.1.1.1.1 heibaiying MySQL EXPLAIN](/02.表与查询优化/01.性能分析/explain/99.参考资料/2020-heibaiying-MySQL%20EXPLAIN.md)
-        - [2.1.1.2 explain](/02.表与查询优化/01.性能分析/explain/explain.md)
+    - [2.1 01.性能分析 [2]](/02.表与查询优化/01.性能分析/README.md)
+      - 2.1.1 99.参考资料 [1]
+        - [2.1.1.1 MySQL 数据库三个关键性能指标 TPS\QPS\IOPS](/02.表与查询优化/01.性能分析/99.参考资料/2021-MySQL%20数据库三个关键性能指标%20TPS\QPS\IOPS.md)
+      - 2.1.2 explain [2]
+        - 2.1.2.1 99.参考资料 [1]
+          - [2.1.2.1.1 heibaiying MySQL EXPLAIN](/02.表与查询优化/01.性能分析/explain/99.参考资料/2020-heibaiying-MySQL%20EXPLAIN.md)
+        - [2.1.2.2 explain](/02.表与查询优化/01.性能分析/explain/explain.md)
     - 2.2 02.查询优化 [5]
       - 2.2.1 Materialized View [1]
         - 2.2.1.1 参考资料 [1]
