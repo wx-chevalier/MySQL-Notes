@@ -1,6 +1,6 @@
 # SQL 语法解析
 
-![](https://i.postimg.cc/Zqjzngf9/image.png)
+![](https://assets.ng-tech.icu/item/20230418231609.png)
 
 # SQL 解析引擎
 
