@@ -41,7 +41,7 @@
 在本系列文章中我们使用官方的 [test_db](https://github.com/datacharmer/test_db) 以及标准的电商库 [MEMI-Schema](https://github.com/wx-chevalier/MEMI-Schema)
 作为我们的测试数据库。
 
-![test_db schema](https://i.postimg.cc/2yV9q7h1/image.png)
+![test_db schema](https://assets.ng-tech.icu/item/20230418153532.png)
 
 # Links
 
