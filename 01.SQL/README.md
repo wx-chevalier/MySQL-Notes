@@ -58,4 +58,4 @@ SQL 作为一项图灵奖级别的发明，其重要意义不单单是发明了�
 - 传统的集合运算包括：并（∪）、差（−）、交（∩）、笛卡尔积（×）。
 - 专门的关系运算包括：选择（σ）、投影（π）、连接（⋈）、除运算（÷）。
 
-![image.png](https://i.postimg.cc/dVjs2b9F/image.png)
+![image.png](https://assets.ng-tech.icu/item/20230424143428.png)

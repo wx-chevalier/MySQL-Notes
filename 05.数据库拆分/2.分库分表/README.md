@@ -18,7 +18,7 @@
 
 我们常说的 Sharding 其实就是 Share Nothing 架构，它是把某个表从物理存储上被水平分割，并分配给多台服务器（或多个实例），每台服务器可以独立工作，具备共同的 schema，比如 MySQL Proxy 和 Google 的各种架构，只需增加服务器数就可以增加处理能力和容量。
 
-![](https://i.postimg.cc/KvrvXBDQ/image.png)
+![](https://assets.ng-tech.icu/item/20230424143336.png)
 
 互联网当下的数据库拆分过程基本遵循的顺序是：垂直拆分、读写分离、分库分表(水平拆分)。每个拆分过程都能解决业务上的一些问题，但同时也面临了一些挑战。
 
