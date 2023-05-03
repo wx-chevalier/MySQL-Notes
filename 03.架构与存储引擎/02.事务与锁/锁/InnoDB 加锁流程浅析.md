@@ -4,7 +4,7 @@ InnoDB 的加锁过程比较复杂，将所有扫描到的记录都加锁，范�
 
 譬如对于 `select * from o_order where order_sn = '201912102322' for update;` 这条 SQL 语句，在不同的索引情况下其加锁策略也不一致：
 
-![](https://i.postimg.cc/HW8Ys7Jm/image.png)
+![](https://assets.ng-tech.icu/item/20230502140054.png)
 
 - order_sn 是主键索引，这种情况将在主键索引上的 `order_sn = 201912102322` 这条记录上加排他锁。
 
