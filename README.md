@@ -30,11 +30,11 @@
 
 ## NGTE Nav | 关联导航
 
-- 数据库理论及 NoSQL 数据库、数据仓库、大数据处理等内容参考《[Database-Series](https://github.com/wx-chevalier/Database-Series?q=)》。
+- 数据库理论及 NoSQL 数据库、数据仓库、大数据处理等内容参考《[Database-Notes](https://github.com/wx-chevalier/Database-Notes?q=)》。
 
-- 操作系统及底层存储理论相关内容参考《[Linux-Series](https://github.com/wx-chevalier/Linux-Series?q=)》。
+- 操作系统及底层存储理论相关内容参考《[Linux-Notes](https://github.com/wx-chevalier/Linux-Notes?q=)》。
 
-- 分布式系统相关内容参考《[DistributedSystem-Series](https://github.com/wx-chevalier/DistributedSystem-Series?q=)》。
+- 分布式系统相关内容参考《[DistributedSystem-Notes](https://github.com/wx-chevalier/DistributedSystem-Notes?q=)》。
 
 ## 测试库
 
