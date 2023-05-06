@@ -229,7 +229,6 @@ Executed_Gtid_Set    : e1148574-bdd0-11e9-8873-0800273acbfd:1-2
 GTID 复制的优点在于程序可以自动确认开始复制的 GTID 点。但其仍然存在以下限制：
 
 - 不支持 CREATE TABLE ... SELECT 语句。 因为在 ROW 格式下，该语句将会被记录为具有不同 GTID 的两个事务，此时从服务器将无法正确处理。
-
 - 事务，过程，函数和触发器内部的 CREATE TEMPORARY TABLE 和 DROP TEMPORARY TABLE 语句均不受支持。
 
 为防止执行不受支持的语句，建议配置和上文配置一样，开启 enforce-gtid-consistency 属性， 开启后在主库上执行以上不受支持的语句都将抛出异常并提示。
