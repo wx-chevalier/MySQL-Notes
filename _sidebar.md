@@ -108,8 +108,10 @@
         
     - [5.4 04.分布式数据库 [1]](/05.数据库拆分/04.分布式数据库/README.md)
       - [5.4.1 异步复制的最终一致性问题](/05.数据库拆分/04.分布式数据库/异步复制的最终一致性问题.md)
-  - 6 99.参考资料 [2]
+  - 6 99.参考资料 [3]
     - [6.1 heibaiying MySQL 基础](/99.参考资料/2020-heibaiying-MySQL%20基础.md)
-    - [6.2 BastJavaer MySQL 系列](/99.参考资料/BastJavaer%20MySQL%20系列/README.md)
+    - [6.2 《MySQL 实战 45 讲》笔记](/99.参考资料/2021-《MySQL%20实战%2045%20讲》笔记/README.md)
+      
+    - [6.3 BastJavaer MySQL 系列](/99.参考资料/BastJavaer%20MySQL%20系列/README.md)
       
   - [7 INTRODUCTION](/INTRODUCTION.md)
