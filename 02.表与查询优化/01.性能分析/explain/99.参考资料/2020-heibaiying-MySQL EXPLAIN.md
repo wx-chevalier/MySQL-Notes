@@ -1,6 +1,6 @@
 # MySQL EXPLAIN
 
-EXPLAIN 关键字可以用于获取 SQL 语句执行计划的相关信息，在 MySQL 8.0 中，EXPLAIN 支持大多数 SQL 语句，如 SELECT 、DELETE 、INSERT 、REPLACE、 UPDATE 。示例如下：
+EXPLAIN 关键字可以用于获取 SQL 语句执行计划的相关信息，在 MySQL 8.0 中，EXPLAIN 支持大多数 SQL 语句，如 SELECT、DELETE、INSERT、REPLACE、 UPDATE 。示例如下：
 
 ```shell
 mysql> EXPLAIN SELECT * FROM employees;
@@ -137,7 +137,7 @@ mysql> EXPLAIN SELECT * FROM dept_emp WHERE dept_no = "d004" AND emp_no < 10020;
 +----+-------------+----------+-------------+-----------------+-----------------+---------+------+------+-----------------------------------------------+
 ```
 
-**7. range**：使用索引进行范围扫描，常见于 between、> 、< 这样的查询条件。
+**7. range**：使用索引进行范围扫描，常见于 between、>、< 这样的查询条件。
 
 ```shell
 mysql> EXPLAIN SELECT * FROM employees WHERE emp_no > 10000;

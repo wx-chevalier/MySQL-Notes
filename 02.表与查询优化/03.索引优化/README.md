@@ -30,7 +30,7 @@
 
 - 对索引进行运算：`select id from std where id+1=10;`
 
-- 对索引使用<> 、not in 、not exist、!=：`select id from std where name != 'jim';`
+- 对索引使用<>、not in、not exist、!=：`select id from std where name != 'jim';`
 
 - 对索引进行前导模糊查询：`select id from std name like '%jim';`
 
