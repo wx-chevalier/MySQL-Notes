@@ -142,6 +142,6 @@
     - [6.1 heibaiying MySQL 基础](/99.参考资料/2020-heibaiying-MySQL%20基础.md)
     - [6.2 《MySQL 实战 45 讲》笔记](/99.参考资料/2021-《MySQL%20实战%2045%20讲》笔记/README.md)
       
-    - [6.3 BastJavaer MySQL 系列](/99.参考资料/BastJavaer%20MySQL%20系列/README.md)
+    - [6.3 BastJavaer MySQL 系列](/99.参考资料/BastJavaer-MySQL%20系列/README.md)
       
   - [7 INTRODUCTION](/INTRODUCTION.md)
