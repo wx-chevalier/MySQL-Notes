@@ -242,7 +242,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
 
 ### 6.1 server.xml
 
-这里新增一个 Mycat 用户，并定义其管理的逻辑数据库为 ec_shop，另外使用 fakeMySQLVersion 来定义你所需要模拟的 MySQL 数据库的版本。如果没有特殊需求， Mycat 自带的 server.xml 中的其他配置可不做更改：
+这里新增一个 Mycat 用户，并定义其管理的逻辑数据库为 ec_shop，另外使用 fakeMySQLVersion 来定义你所需要模拟的 MySQL 数据库的版本。如果没有特殊需求，Mycat 自带的 server.xml 中的其他配置可不做更改：
 
 ```xml
 <system>

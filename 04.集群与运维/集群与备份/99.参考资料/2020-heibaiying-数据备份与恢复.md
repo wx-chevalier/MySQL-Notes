@@ -46,15 +46,15 @@ mysqldump [options] --all-databases
 
 options 代表可选操作，常用的可选参数如下：
 
-- **--host=host_name， -h host_name**
+- **--host=host_name，-h host_name**
 
   指定服务器地址。
 
-- **--user=user_name， -u user_name**
+- **--user=user_name，-u user_name**
 
   指定用户名。
 
-- **--password[=password]， -p[password]**
+- **--password[=password]，-p[password]**
 
   指定密码。通常无需在命令行中明文指定，按照提示输入即可。
 
@@ -62,7 +62,7 @@ options 代表可选操作，常用的可选参数如下：
 
   导出文本使用的字符集，默认为 utf8。
 
-- **--events， -E**
+- **--events，-E**
 
   备份包含数据库中的事件。
 
@@ -70,7 +70,7 @@ options 代表可选操作，常用的可选参数如下：
 
   不需要进行备份的表，必须使用数据库和表名来共同指定。也可以作用于视图。
 
-- **--routines， -R**
+- **--routines，-R**
 
   备份包含数据库中的存储过程和自定义函数。
 
@@ -78,25 +78,25 @@ options 代表可选操作，常用的可选参数如下：
 
   备份包含数据库中的触发器。
 
-- **--where='where_condition'， -w 'where_condition'**
+- **--where='where_condition'，-w 'where_condition'**
 
   在对单表进行导出时候，可以指定过滤条件，例如指定用户名 `--where="user='jimf'"` 或用户范围 `-w"userid>1"` 。
 
-- **--lock-all-tables， -x**
+- **--lock-all-tables，-x**
 
   锁定所有数据库中的所有表，从而保证备份数据的一致性。此选项自动关闭 `--single-transaction` 和 `--lock-tables`。
 
-- **--lock-tables， -l**
+- **--lock-tables，-l**
 
   锁定当前数据库中所有表，能够保证当前数据库中表的一致性，但不能保证全局的一致性。
 
 - **--single-transaction**
 
-  此选项会将事务隔离模式设置为 REPEATABLE READ 并开启一个事务，从而保证备份数据的一致性。主要用于事务表，如 InnoDB 表。 但是此时仍然不能在备份表上执行 ALTER TABLE， CREATE TABLE， DROP TABLE， RENAME TABLE， TRUNCATE TABLE 等操作，因为 REPEATABLE READ 并不能隔离这些操作。
+  此选项会将事务隔离模式设置为 REPEATABLE READ 并开启一个事务，从而保证备份数据的一致性。主要用于事务表，如 InnoDB 表。但是此时仍然不能在备份表上执行 ALTER TABLE，CREATE TABLE，DROP TABLE，RENAME TABLE，TRUNCATE TABLE 等操作，因为 REPEATABLE READ 并不能隔离这些操作。
 
   另外需要注意的是 `--single-transaction` 选项与 `--lock-tables` 选项是互斥的，因为 LOCK TABLES 会导致任何正在挂起的事务被隐式提交。转储大表时，可以将 `--single-transaction` 选项与 `--quick` 选项组合使用 。
 
-- **--quick， -q**
+- **--quick，-q**
 
   主要用于备份大表。它强制 mysqldump 一次只从服务器检索一行数据，避免一次检索所有行而导致缓存溢出。
 

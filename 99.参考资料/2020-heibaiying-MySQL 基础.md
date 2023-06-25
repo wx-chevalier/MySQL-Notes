@@ -55,7 +55,7 @@ ARCHIVE 存储引擎默认采用 zlib 无损数据压缩算法进行数据压缩
 
 ### 1.6 MEGRE
 
-MERGE 存储引擎，也称为 MRG_MyISAM 引擎，是一组相同 MyISAM 表的集合。 ”相同” 表示所有表必须具有相同的列数据类型和索引信息。可以通过 `UNION = (list-of-tables)` 选项来创建 MERGE 表，如下：
+MERGE 存储引擎，也称为 MRG_MyISAM 引擎，是一组相同 MyISAM 表的集合。”相同” 表示所有表必须具有相同的列数据类型和索引信息。可以通过 `UNION = (list-of-tables)` 选项来创建 MERGE 表，如下：
 
 ```sql
 mysql> CREATE TABLE t1 ( a INT NOT NULL AUTO_INCREMENT PRIMARY KEY, message CHAR(20)) ENGINE=MyISAM;
