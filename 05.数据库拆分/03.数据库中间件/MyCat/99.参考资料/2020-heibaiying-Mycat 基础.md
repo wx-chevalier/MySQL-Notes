@@ -163,7 +163,7 @@ GO0bnFVWrAuFgr1JMuMZkvfDNyTpoiGU7n/Wlsa151CirHQnANVk3NzE3FErx8v6pAcO0ctX3xFecmSr
 
   - `balance="0"` ：不开启读写分离机制，所有读请求都发送到当前可用的 writeHost 上。
   - `balance="1"` ：全部的 readHost 与 stand by writeHost 参与读操作。stand by writeHost 通常指的是双主复制中处于 stand 状态的主节点，即假设集群复制架构为 Master1 -> Slave1，Master2 -> Slave2，并且 M1 与 M2 互为主备 )，此时 Master2 ，Slave1，Slave2 都会参与读的负载。
-  - `balance="2"` ：所有读请求随机在 writeHost、 readhost 上进行分发。
+  - `balance="2"` ：所有读请求随机在 writeHost、readhost 上进行分发。
   - `balance="3"` ：所有读请求随机分发到 writeHost 对应的 readhost 执行，writerHost 不负担读压力。
 
 ### 4.3 rule.xml

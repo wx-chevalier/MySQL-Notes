@@ -1003,7 +1003,7 @@ InnoDB 使用一个后台线程智能地刷新这些变更到数据文件。实�
 
 ### innodb-flush-method
 
-前面都在讨论使用什么样的策略刷新、以及何时刷新日志或者数据，那 InnoDB 具体是怎样刷新数据的？使用 innodb-flush-method 选项可以配置 InnoDB 如何跟文件系统相互作用。从名字上看，会以为只能影响 InnoDB 怎么写数据，实际上还影响了 InnoDB 怎么读数据。windows 和非 Windows 操作系统下这个选项的值是互斥的，也就是说有些值只能 Windows 下使用，有些只能在非 Windows 下使用，其中 Windows 下可取值： async_unbuffered、 unbuffered、 normal、 Nosync 与 littlesync，非 Windows 取值： fdatasync、 0_DIRECT、 0_DSYNC。
+前面都在讨论使用什么样的策略刷新、以及何时刷新日志或者数据，那 InnoDB 具体是怎样刷新数据的？使用 innodb-flush-method 选项可以配置 InnoDB 如何跟文件系统相互作用。从名字上看，会以为只能影响 InnoDB 怎么写数据，实际上还影响了 InnoDB 怎么读数据。windows 和非 Windows 操作系统下这个选项的值是互斥的，也就是说有些值只能 Windows 下使用，有些只能在非 Windows 下使用，其中 Windows 下可取值： async_unbuffered、unbuffered、normal、Nosync 与 littlesync，非 Windows 取值： fdatasync、0_DIRECT、0_DSYNC。
 
 这个选项既会影响日志文件，也会影响数据文件，而且有时候对不同类型的文件的处理也不一样，导致这个选项有些难以理解。如果有一个选项来配置日志文件，一个选项来配置数据文件，应该会更好，但实际上它们混合在同一个配置项中。这里只介绍类 Unix 操作系统下的选项。
 
