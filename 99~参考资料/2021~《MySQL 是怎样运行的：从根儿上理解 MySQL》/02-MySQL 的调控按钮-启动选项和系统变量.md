@@ -111,13 +111,13 @@ mysqld -P 3307
 
 &emsp;&emsp;在`Windows`操作系统中，`MySQL`会按照下列路径来寻找配置文件：
 
-| 路径名                                | 备注                         |
-| ------------------------------------- | ---------------------------- |
-| `%WINDIR%\my.ini`， `%WINDIR%\my.cnf` |                              |
-| `C:\my.ini`， `C:\my.cnf`             |                              |
-| `BASEDIR\my.ini`， `BASEDIR\my.cnf`   |                              |
-| `defaults-extra-file`                 | 命令行指定的额外配置文件路径 |
-| `%APPDATA%\MySQL\.mylogin.cnf`        | 登录路径选项（仅限客户端）   |
+| 路径名                               | 备注                         |
+| ------------------------------------ | ---------------------------- |
+| `%WINDIR%\my.ini`，`%WINDIR%\my.cnf` |                              |
+| `C:\my.ini`，`C:\my.cnf`             |                              |
+| `BASEDIR\my.ini`，`BASEDIR\my.cnf`   |                              |
+| `defaults-extra-file`                | 命令行指定的额外配置文件路径 |
+| `%APPDATA%\MySQL\.mylogin.cnf`       | 登录路径选项（仅限客户端）   |
 
 &emsp;&emsp;在阅读这些`Windows`操作系统下配置文件路径的时候需要注意一些事情：
 

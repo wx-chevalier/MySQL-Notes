@@ -350,7 +350,7 @@ n_field: 0x07
 next_record:0xBC
 ```
 
-&emsp;&emsp;与`Compact`行格式的记录头信息对比来看，有两处不同： 1. Redundant 行格式多了 n_field 和 1byte_offs_flag 这两个属性。 2. Redundant 行格式没有 record_type 这个属性。
+&emsp;&emsp;与`Compact`行格式的记录头信息对比来看，有两处不同： 1. Redundant 行格式多了 n_field 和 1byte_offs_flag 这两个属性。2. Redundant 行格式没有 record_type 这个属性。
 
 - `1byte_offs_flag`的值是怎么选择的
 
