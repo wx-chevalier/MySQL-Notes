@@ -4,13 +4,13 @@ InnoDB 是事务安全的存储引擎，设计上借鉴了很多 Oracle 的架�
 
 InnoDB 的整体架构分为两个部分：内存架构和磁盘架构，如图：
 
-![InnoDB 整体架构](https://assets.ng-tech.icu/superbed/2021/07/25/60fd14be5132923bf8a00f56.jpg)
+![InnoDB 整体架构](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd14be5132923bf8a00f56.jpg)
 
 # Memory Architecture | 内存架构
 
 InnoDB 的内存主要有以下几个部分组成：缓冲池 (buffer pool)、重做日志缓冲池(Redo Log buffer）以及额外的内存池（additional memory pool），如下图所示：
 
-![](https://assets.ng-tech.icu/item/20230502140209.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230502140209.png)
 
 其中缓冲池占最大块内存，用来缓存各自数据，数据文件按页（每页 16K）读取到缓冲池，按最近最少使用算法（LRU）保留缓存数据。缓冲池缓冲的数据类型有：数据页、索引页、插入缓冲、自适应哈希索引、锁信息、数据字典信息等，其中数据页和索引页占了绝大部分内存。日志缓冲将重做日志信息先放入这个缓冲区，然后按一定频率（默认为 1s）将其刷新至重做日志文件。
 
@@ -20,7 +20,7 @@ InnoDB 通过一些列后台线程将相关操作进行异步处理，同时借�
 
 InnoDB 存储引擎的逻辑存储结构和 Oracle 大致相同，所有数据都被逻辑地存放在一个空间中，我们称之为表空间（tablespace）。表空间又由段（segment）、区（extent）、页（page）组成。页在一些文档中有时也称为块（block），1 extent = 64 pages，InnoDB 存储引擎的逻辑存储结构大致如图所示：
 
-![](https://assets.ng-tech.icu/item/20230502140226.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230502140226.png)
 
 表空间作为存储结构的最高层，所有数据都存放在表空间中，默认情况下用一个共享表空间 ibdata1，如果开启了 innodb_file_per_table 则每张表的数据将存储在单独的表空间中，也就是每张表都会有一个文件，
 
@@ -32,19 +32,19 @@ InnoDB 存储引擎的逻辑存储结构和 Oracle 大致相同，所有数据�
 
 InnoDB 引擎是面向行存储的，数据都是存储在磁盘的数据页中，数据页里面按照固定的行格式存储着每一行数据。行格式主要分为四种类型 Compact、Redundant、Dynamic 和 Compressed，默认为 Compact 格式。
 
-![Compact 行格式示意图](https://assets.ng-tech.icu/superbed/2021/07/25/60fd15385132923bf8a286ff.jpg)
+![Compact 行格式示意图](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd15385132923bf8a286ff.jpg)
 
 ## 磁盘预读机制和局部性原理
 
 当计算机访问一个数据时，不仅会加载当前数据所在的数据页，还会将当前数据页相邻的数据页一同加载到内存，磁盘预读的长度一般为页的整倍数，从而有效降低磁盘 IO 的次数。
 
-![磁盘预读和局部性](https://assets.ng-tech.icu/superbed/2021/07/25/60fd15cf5132923bf8a57386.jpg)
+![磁盘预读和局部性](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd15cf5132923bf8a57386.jpg)
 
 ## 磁盘和内存的交互
 
 MySQL 中磁盘的数据需要被交换到内存，才能完成一次 SQL 交互，大致如图：
 
-![磁盘和内存交互](https://assets.ng-tech.icu/superbed/2021/07/25/60fd16285132923bf8a72b91.jpg)
+![磁盘和内存交互](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/superbed/2021/07/25/60fd16285132923bf8a72b91.jpg)
 
 - 扇区是硬盘的读写的基本单位，通常情况下每个扇区的大小是 512B
 - 磁盘块文件系统读写数据的最小单位，相邻的扇区组合在一起形成一个块，一般是 4KB
@@ -67,7 +67,7 @@ MySQL 的数据是一行行存储在磁盘上的，并且这些数据并非物�
 
 默认情况下，InnoDB 的后台线程有 7 个，其中 4 个 IO thread, 1 个 Master thread, 1 个 Lock monitor thread, 一个 Error monitor thread。InnoDB 的主要工作都是在一个单独的 Master 线程里完成的。Master 线程的优先级最高，它主要分为以下几个循环：主循环（loop）、后台循环（background loop）、刷新循环（flush loop）、暂停循环（suspend loop）。
 
-![](https://assets.ng-tech.icu/item/20230502140308.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230502140308.png)
 
 其中主循环的伪代码如下：
 

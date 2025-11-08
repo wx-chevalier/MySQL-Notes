@@ -4,12 +4,12 @@ Sharding-Sphere 是一套开源的分布式数据库中间件解决方案组成�
 
 Sharding-JDBC 定位为轻量级 Java 框架，在 Java 的 JDBC 层提供的额外服务。它使用客户端直连数据库，以 jar 包形式提供服务，无需额外部署和依赖，可理解为增强版的 JDBC 驱动，完全兼容 JDBC 和各种 ORM 框架。
 
-![](https://assets.ng-tech.icu/item/20230416203214.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230416203214.png)
 
 Sharding-Proxy 定位为透明化的数据库代理端，提供封装了数据库二进制协议的服务端版本，用于完成对异构语言的支持。目前先提供 MySQL 版本，它可以使用任何兼容 MySQL 协议的访问客户端(如：MySQL Command Client, MySQL Workbench 等)操作数据，对 DBA 更加友好。
 
-![](https://assets.ng-tech.icu/item/20230416203231.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230416203231.png)
 
 Sharding-Sidecar 定位为 Kubernetes 或 Mesos 的云原生数据库代理，以 DaemonSet 的形式代理所有对数据库的访问。通过无中心、零侵入的方案提供与数据库交互的的啮合层，即 Database Mesh，又可称数据网格。
 
-![](https://assets.ng-tech.icu/item/20230416203304.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230416203304.png)

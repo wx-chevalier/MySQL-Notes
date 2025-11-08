@@ -13,7 +13,7 @@ Query Manager 会负责将用户编写的 SQL 语句转化为能够被快速执�
 
 在[《MySQL-Notes》](https://github.com/wx-chevalier/MySQL-Notes?q=)一文中，我们讨论过 MySQL 数据页的存储结构。由于索引只能定位到数据页，而定位到数据页内的行记录还需要在内存中进行二分查找，而这个二分查找就需要借助 slot 信息，先找到对应的 slot，然后在 slot 内部通过数据行中记录头里的下一个记录地址进行遍历。每一个 slot 可以包含 4 到 8 个数据行。如果没有 slot 辅助，链表本身是无法进行二分查找的。
 
-![](https://assets.ng-tech.icu/item/20230430222059.png)
+![](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230430222059.png)
 
 # Links
 

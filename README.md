@@ -8,7 +8,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/wx-chevalier/repo">
-    <img src="https://assets.ng-tech.icu/item/header.svg" alt="Logo" style="width: 100vw;height: 400px" />
+    <img src="https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/header.svg" alt="Logo" style="width: 100vw;height: 400px" />
   </a>
 
   <p align="center">
@@ -41,7 +41,7 @@
 在本系列文章中我们使用官方的 [test_db](https://github.com/datacharmer/test_db) 以及标准的电商库 [MEMI-Schema](https://github.com/wx-chevalier/MEMI-Schema)
 作为我们的测试数据库。
 
-![test_db schema](https://assets.ng-tech.icu/item/20230418153532.png)
+![test_db schema](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230418153532.png)
 
 # Links
 
