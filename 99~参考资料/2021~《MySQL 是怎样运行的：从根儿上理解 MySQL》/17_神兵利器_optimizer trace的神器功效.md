@@ -1,8 +1,8 @@
 # 第 17 章 神兵利器-optimizer trace 表的神器功效
 
-&emsp;&emsp;对于`MySQL 5.6`以及之前的版本来说，查询优化器就像是一个黑盒子一样，你只能通过`EXPLAIN`语句查看到最后优化器决定使用的执行计划，却无法知道它为什么做这个决策。这对于一部分喜欢刨根问底的小伙伴来说简直是灾难：“我就觉得使用其他的执行方案比`EXPLAIN`输出的这种方案强，凭什么优化器做的决定和我想的不一样呢？”
+对于`MySQL 5.6`以及之前的版本来说，查询优化器就像是一个黑盒子一样，你只能通过`EXPLAIN`语句查看到最后优化器决定使用的执行计划，却无法知道它为什么做这个决策。这对于一部分喜欢刨根问底的小伙伴来说简直是灾难：“我就觉得使用其他的执行方案比`EXPLAIN`输出的这种方案强，凭什么优化器做的决定和我想的不一样呢？”
 
-&emsp;&emsp;在`MySQL 5.6`以及之后的版本中，设计`MySQL`的大佬贴心的为这部分小伙伴提出了一个`optimizer trace`的功能，这个功能可以让我们方便的查看优化器生成执行计划的整个过程，这个功能的开启与关闭由系统变量`optimizer_trace`决定，我们看一下：
+在`MySQL 5.6`以及之后的版本中，设计`MySQL`的大佬贴心的为这部分小伙伴提出了一个`optimizer trace`的功能，这个功能可以让我们方便的查看优化器生成执行计划的整个过程，这个功能的开启与关闭由系统变量`optimizer_trace`决定，我们看一下：
 
 ```
 mysql> SHOW VARIABLES LIKE 'optimizer_trace';
@@ -14,27 +14,27 @@ mysql> SHOW VARIABLES LIKE 'optimizer_trace';
 1 row in set (0.02 sec)
 ```
 
-&emsp;&emsp;可以看到`enabled`值为`off`，表明这个功能默认是关闭的。
+可以看到`enabled`值为`off`，表明这个功能默认是关闭的。
 
 ```
 小贴士：one_line的值是控制输出格式的，如果为on那么所有输出都将在一行中展示，不适合人阅读，所以我们就保持其默认值为off吧。
 ```
 
-&emsp;&emsp;如果想打开这个功能，必须首先把`enabled`的值改为`on`，就像这样：
+如果想打开这个功能，必须首先把`enabled`的值改为`on`，就像这样：
 
 ```
 mysql> SET optimizer_trace="enabled=on";
 Query OK, 0 rows affected (0.00 sec)
 ```
 
-&emsp;&emsp;然后我们就可以输入我们想要查看优化过程的查询语句，当该查询语句执行完成后，就可以到`information_schema`数据库下的`OPTIMIZER_TRACE`表中查看完整的优化过程。这个`OPTIMIZER_TRACE`表有 4 个列，分别是：
+然后我们就可以输入我们想要查看优化过程的查询语句，当该查询语句执行完成后，就可以到`information_schema`数据库下的`OPTIMIZER_TRACE`表中查看完整的优化过程。这个`OPTIMIZER_TRACE`表有 4 个列，分别是：
 
 - `QUERY`：表示我们的查询语句。
 - `TRACE`：表示优化过程的 JSON 格式文本。
 - `MISSING_BYTES_BEYOND_MAX_MEM_SIZE`：由于优化过程可能会输出很多，如果超过某个限制时，多余的文本将不会被显示，这个字段展示了被忽略的文本字节数。
 - `INSUFFICIENT_PRIVILEGES`：表示是否没有权限查看优化过程，默认值是 0，只有某些特殊情况下才会是`1`，我们暂时不关心这个字段的值。
 
-&emsp;&emsp;完整的使用`optimizer trace`功能的步骤总结如下：
+完整的使用`optimizer trace`功能的步骤总结如下：
 
 ```
 # 1. 打开optimizer trace功能 (默认情况下它是关闭的):
@@ -53,7 +53,7 @@ SELECT * FROM information_schema.OPTIMIZER_TRACE;
 SET optimizer_trace="enabled=off";
 ```
 
-&emsp;&emsp;现在我们有一个搜索条件比较多的查询语句，它的执行计划如下：
+现在我们有一个搜索条件比较多的查询语句，它的执行计划如下：
 
 ```
 mysql> EXPLAIN SELECT * FROM s1 WHERE
@@ -69,7 +69,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE
 1 row in set, 1 warning (0.00 sec)
 ```
 
-&emsp;&emsp;可以看到该查询可能使用到的索引有 3 个，那么为什么优化器最终选择了`idx_key2`而不选择其他的索引或者直接全表扫描呢？这时候就可以通过`otpimzer trace`功能来查看优化器的具体工作过程：
+可以看到该查询可能使用到的索引有 3 个，那么为什么优化器最终选择了`idx_key2`而不选择其他的索引或者直接全表扫描呢？这时候就可以通过`otpimzer trace`功能来查看优化器的具体工作过程：
 
 ```
 SET optimizer_trace="enabled=on";
@@ -83,7 +83,7 @@ SELECT * FROM s1 WHERE
 SELECT * FROM information_schema.OPTIMIZER_TRACE\G
 ```
 
-&emsp;&emsp;我们直接看一下通过查询`OPTIMIZER_TRACE`表得到的输出（我使用`#`后跟随注释的形式为大家解释了优化过程中的一些比较重要的点，大家重点关注一下）：
+我们直接看一下通过查询`OPTIMIZER_TRACE`表得到的输出（我使用`#`后跟随注释的形式为大家解释了优化过程中的一些比较重要的点，大家重点关注一下）：
 
 ```
 *************************** 1. row ***************************
@@ -369,14 +369,14 @@ INSUFFICIENT_PRIVILEGES: 0
 1 row in set (0.00 sec)
 ```
 
-&emsp;&emsp;大家看到这个输出的第一感觉就是这文本也太多了点儿吧，其实这只是优化器执行过程中的一小部分，设计`MySQL`的大佬可能会在之后的版本中添加更多的优化过程信息。不过杂乱之中其实还是蛮有规律的，优化过程大致分为了三个阶段：
+大家看到这个输出的第一感觉就是这文本也太多了点儿吧，其实这只是优化器执行过程中的一小部分，设计`MySQL`的大佬可能会在之后的版本中添加更多的优化过程信息。不过杂乱之中其实还是蛮有规律的，优化过程大致分为了三个阶段：
 
 - `prepare`阶段
 - `optimize`阶段
 - `execute`阶段
 
-&emsp;&emsp;我们所说的基于成本的优化主要集中在`optimize`阶段，对于单表查询来说，我们主要关注`optimize`阶段的`"rows_estimation"`这个过程，这个过程深入分析了对单表查询的各种执行方案的成本；对于多表连接查询来说，我们更多需要关注`"considered_execution_plans"`这个过程，这个过程里会写明各种不同的连接方式所对应的成本。反正优化器最终会选择成本最低的那种方案来作为最终的执行计划，也就是我们使用`EXPLAIN`语句所展现出的那种方案。
+我们所说的基于成本的优化主要集中在`optimize`阶段，对于单表查询来说，我们主要关注`optimize`阶段的`"rows_estimation"`这个过程，这个过程深入分析了对单表查询的各种执行方案的成本；对于多表连接查询来说，我们更多需要关注`"considered_execution_plans"`这个过程，这个过程里会写明各种不同的连接方式所对应的成本。反正优化器最终会选择成本最低的那种方案来作为最终的执行计划，也就是我们使用`EXPLAIN`语句所展现出的那种方案。
 
-&emsp;&emsp;如果有小伙伴对使用`EXPLAIN`语句展示出的对某个查询的执行计划很不理解，大家可以尝试使用`optimizer trace`功能来详细了解每一种执行方案对应的成本，相信这个功能能让大家更深入的了解`MySQL`查询优化器。
+如果有小伙伴对使用`EXPLAIN`语句展示出的对某个查询的执行计划很不理解，大家可以尝试使用`optimizer trace`功能来详细了解每一种执行方案对应的成本，相信这个功能能让大家更深入的了解`MySQL`查询优化器。
 
 <div STYLE="page-break-after: always;"></div>
