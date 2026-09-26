@@ -10,12 +10,12 @@
 
 ```sql
 mysqld --skip-networking
-```sql
+```
 可以看到，我们在命令行中指定启动选项时需要在选项名前加上`--`前缀。另外，如果选项名是由多个单词构成的，它们之间可以由短划线`-`连接起来，也可以使用下划线`_`连接起来，也就是说`skip-networking`和`skip_networking`表示的含义是相同的。所以上面的写法与下面的写法是等价的：
 
 ```sql
 mysqld --skip_networking
-```sql
+```
 在按照上述命令启动服务器程序后，如果我们再使用`mysql`来启动客户端程序时，再把服务器主机名指定为`127.0.0.1`（IP 地址的形式）的话会显示连接失败：
 
 ```sql
@@ -23,14 +23,14 @@ mysqld --skip_networking
 Enter password:
 
 ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1' (61)
-```sql
+```
 这就意味着我们指定的启动选项`skip-networking`生效了！
 
 再举一个例子，我们前面说过如果在创建表的语句中没有显式指定表的存储引擎的话，那就会默认使用`InnoDB`作为表的存储引擎。如果我们想改变表的默认存储引擎的话，可以这样写启动服务器的命令行：
 
 ```sql
 mysqld --default-storage-engine=MyISAM
-```sql
+```
 我们现在就已经把表的默认存储引擎改为`MyISAM`了，在客户端程序连接到服务器程序后试着创建一个表：
 
 ```sql
@@ -38,7 +38,7 @@ mysql> CREATE TABLE sys_var_demo(
     ->     i INT
     -> );
 Query OK, 0 rows affected (0.02 sec)
-```sql
+```
 这个定义语句中我们并没有明确指定表的存储引擎，创建成功后再看一下这个表的结构：
 
 ```sql
@@ -49,20 +49,20 @@ Create Table: CREATE TABLE `sys_var_demo` (
   `i` int(11) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8
 1 row in set (0.01 sec)
-```sql
+```
 可以看到该表的存储引擎已经是`MyISAM`了，说明启动选项`default-storage-engine`生效了。
 
 所以在启动服务器程序的命令行后边指定启动选项的通用格式就是这样的：
 
 ```sql
 --启动选项1[=值1] --启动选项2[=值2] ... --启动选项n[=值n]
-```sql
+```
 也就是说我们可以将各个启动选项写到一行中，各个启动选项之间使用空白字符隔开，在每一个启动选项名称前面添加`--`。对于不需要值的启动选项，比方说`skip-networking`，它们就不需要指定对应的值。对于需要指定值的启动选项，比如`default-storage-engine`我们在指定这个设置项的时候需要显式的指定它的值：`InnoDB`、`MyISAM`等。在命令行上指定有值的启动选项时需要注意，<span style="color:red">选项名、=、选项值之间不可以有空白字符</span>，比如写成下面这样就是不正确的：
 
 ```sql
 mysqld --default-storage-engine = MyISAM
 
-```sql
+```
 <span style="color:red">每个 MySQL 程序都有许多不同的选项。大多数程序提供了一个`--help`选项，你可以查看该程序支持的全部启动选项以及它们的默认值</span>。例如，使用`mysql --help`可以看到`mysql`程序支持的启动选项，`mysqld_safe --help`可以看到`mysqld_safe`程序支持的启动选项。查看`mysqld`支持的启动选项有些特别，需要使用`mysqld --verbose --help`。
 
 ### 选项的长形式和短形式
@@ -81,12 +81,12 @@ mysqld --default-storage-engine = MyISAM
 
 ```sql
 mysqld -P3307
-```sql
+```
 使用短形式指定启动选项时，选项名和选项值之间可以没有间隙，或者用空白字符隔开（`-p`选项有些特殊，`-p`和密码值之间不能有空白字符），也就是说上面的命令形式和下面的是等价的：
 
 ```sql
 mysqld -P 3307
-```sql
+```
 另外，选项名是区分大小写的，比如`-p`和`-P`选项拥有完全不同的含义，大家需要注意一下。
 
 ## 配置文件中使用选项
@@ -143,7 +143,7 @@ mysqld -P 3307
 
 ```sql
 小贴士：mysql_config_editor实用程序其实是MySQL安装目录下的bin目录下的一个可执行文件，这个实用程序有专用的语法来生成或修改 .mylogin.cnf 文件中的内容，如何使用这个程序不是我们讨论的主题，可以到MySQL的官方文档中查看。
-```sql
+```
 #### 类 Unix 操作系统中的配置文件
 
 在类`UNIX`操作系统中，`MySQL`会按照下列路径来寻找配置文件：
@@ -184,7 +184,7 @@ mysqld -P 3307
 
 ```sql
 mysqld_safe --skip-networking
-```sql
+```
 则在`mysqld_safe`调用`mysqld`时，会把它处理不了的这个`skip-networking`选项交给`mysqld`处理。
 
 ### 配置文件的内容
@@ -209,7 +209,7 @@ mysqld_safe --skip-networking
 
 [mysqladmin]
 (具体的启动选项...)
-```sql
+```
 像这个配置文件里就定义了许多个组，组名分别是`server`、`mysqld`、`mysqld_safe`、`client`、`mysql`、`mysqladmin`。每个组下面可以定义若干个启动选项，我们以`[server]`组为例来看一下填写启动选项的形式（其他组中启动选项的形式是一样的）：
 
 ```sql
@@ -217,12 +217,12 @@ mysqld_safe --skip-networking
 option1            #这是option1，该选项不需要选项值
 option2 = value2      #这是option2，该选项需要选项值
 ...
-```sql
+```
 在配置文件中指定启动选项的语法类似于命令行语法，但是配置文件中只能使用长形式的选项。在配置文件中指定的启动选项不允许加`--`前缀，并且每行只指定一个选项，而且`=`周围可以有空白字符（命令行中选项名、`=`、选项值之间不允许有空白字符）。另外，在配置文件中，我们可以使用`#`来添加注释，从`#`出现直到行尾的内容都属于注释内容，读取配置文件时会忽略这些注释内容。为了大家更容易对比启动选项在命令行和配置文件中指定的区别，我们再把命令行中指定`option1`和`option2`两个选项的格式写一遍看看：
 
 ```sql
 --option1 --option2=value2
-```sql
+```
 配置文件中不同的选项组是给不同的启动命令使用的，如果选项组名称与程序名称相同，则组中的选项将专门应用于该程序。例如，`[mysqld]`和`[mysql]`组分别应用于`mysqld`服务器程序和`mysql`客户端程序。不过有两个选项组比较特别：
 
 - `[server]`组下面的启动选项将作用于所有的服务器程序。
@@ -246,17 +246,17 @@ option2 = value2      #这是option2，该选项需要选项值
 [server]
 skip-networking
 default-storage-engine=MyISAM
-```sql
+```
 然后直接用`mysqld`启动服务器程序：
 
 ```sql
 mysqld
-```sql
+```
 虽然在命令行没有添加启动选项，但是在程序启动的时候，就会默认的到我们上面提到的配置文件路径下查找配置文件，其中就包括`/etc/mysql/my.cnf`。又由于`mysqld`命令可以读取`[server]`选项组的内容，所以`skip-networking`和`default-storage-engine=MyISAM`这两个选项是生效的。你可以把这些启动选项放在`[client]`组里再试试用`mysqld`启动服务器程序，看一下里边的启动选项生效不（剧透一下，不生效）。
 
 ```sql
 小贴士：如果我们想指定mysql.server程序的启动参数，则必须将它们放在配置文件中，而不是放在命令行中。mysql.server仅支持start和stop作为命令行参数。
-```sql
+```
 ### 特定 MySQL 版本的专用选项组
 
 我们可以在选项组的名称后加上特定的`MySQL`版本号，比如对于`[mysqld]`选项组来说，我们可以定义一个`[mysqld-5.7]`的选项组，它的含义和`[mysqld]`一样，只不过只有版本号为`5.7`的`mysqld`程序才能使用这个选项组中的选项。
@@ -268,13 +268,13 @@ mysqld
 ```sql
 [server]
 default-storage-engine=InnoDB
-```sql
+```
 而`~/.my.cnf`文件中的内容是这样的：
 
 ```sql
 [server]
 default-storage-engine=MyISAM
-```sql
+```
 又因为`~/.my.cnf`比`/etc/my.cnf`顺序靠后，所以如果两个配置文件中出现相同的启动选项，以`~/.my.cnf`中的为准，所以`MySQL`服务器程序启动之后，`default-storage-engine`的值就是`MyISAM`。
 
 ### 同一个配置文件中多个组的优先级
@@ -287,7 +287,7 @@ default-storage-engine=InnoDB
 
 [mysqld]
 default-storage-engine=MyISAM
-```sql
+```
 那么，<span style="color:red">将以最后一个出现的组中的启动选项为准</span>，比方说例子中`default-storage-engine`既出现在`[mysqld]`组也出现在`[server]`组，因为`[mysqld]`组在`[server]`组后边，就以`[mysqld]`组中的配置项为准。
 
 ### defaults-file 的使用
@@ -296,12 +296,12 @@ default-storage-engine=MyISAM
 
 ```sql
 mysqld --defaults-file=/tmp/myconfig.txt
-```sql
+```
 这样，在程序启动的时候将只在`/tmp/myconfig.txt`路径下搜索配置文件。如果文件不存在或无法访问，则会发生错误。
 
 ```sql
 小贴士：注意defaults-extra-file和defaults-file的区别，使用defaults-extra-file可以指定额外的配置文件搜索路径（也就是说那些固定的配置文件路径也会被搜索）。
-```sql
+```
 ## 命令行和配置文件中启动选项的区别
 
 在命令行上指定的绝大部分启动选项都可以放到配置文件中，但是有一些选项是专门为命令行设计的，比方说`defaults-extra-file`、`defaults-file`这样的选项本身就是为了指定配置文件路径的，再放在配置文件中使用就没什么意义了。剩下的一些只能用在命令行上而不能用到配置文件中的启动选项就不一一列举了，用到的时候再提（本书中基本用不到，有兴趣的到官方文档看）。
@@ -311,12 +311,12 @@ mysqld --defaults-file=/tmp/myconfig.txt
 ```sql
 [server]
 default-storage-engine=InnoDB
-```sql
+```
 而我们的启动命令是：
 
 ```sql
 mysql.server start --default-storage-engine=MyISAM
-```sql
+```
 那最后`default-storage-engine`的值就是`MyISAM`！
 
 ## 系统变量
@@ -331,7 +331,7 @@ mysql.server start --default-storage-engine=MyISAM
 
 ```sql
 SHOW VARIABLES [LIKE 匹配的模式];
-```sql
+```
 由于`系统变量`实在太多了，如果我们直接使用`SHOW VARIABLES`查看的话就直接刷屏了，所以通常都会带一个`LIKE`过滤条件来查看我们需要的系统变量的值，比方说这么写：
 
 ```sql
@@ -350,7 +350,7 @@ mysql> SHOW VARIABLES like 'max_connections';
 | max_connections | 151   |
 +-----------------+-------+
 1 row in set (0.00 sec)
-```sql
+```
 可以看到，现在服务器程序使用的默认存储引擎就是`InnoDB`，允许同时连接的客户端数量最多为`151`。别忘了`LIKE`表达式后边可以跟通配符来进行模糊查询，也就是说我们可以这么写：
 
 ```sql
@@ -367,7 +367,7 @@ mysql> SHOW VARIABLES LIKE 'default%';
 5 rows in set (0.01 sec)
 
 mysql>
-```sql
+```
 这样就查出了所有以`default`开头的系统变量的值。
 
 ### 设置系统变量
@@ -412,7 +412,7 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 1 row in set (0.00 sec)
 
 mysql>
-```sql
+```
 可以看到`default_storage_engine`和`max_connections`这两个系统变量的值已经被修改了。有一点需要注意的是，<span style="color:red">对于启动选项来说，如果启动选项名由多个单词组成，各个单词之间用短划线`-`或者下划线`_`连接起来都可以，但是对应的系统变量之间必须使用下划线`_`连接起来</span>。
 
 #### 服务器程序运行过程中设置
@@ -441,25 +441,25 @@ mysql>
 
 ```sql
 SET [GLOBAL|SESSION] 系统变量名 = 值;
-```sql
+```
 或者写成这样也行：
 
 ```sql
 SET [@@(GLOBAL|SESSION).]var_name = XXX;
-```sql
+```
 比如我们想在服务器运行过程中把作用范围为`GLOBAL`的系统变量`default_storage_engine`的值修改为`MyISAM`，也就是想让后面新连接到服务器的客户端都用`MyISAM`作为默认的存储引擎，那我们可以选择下面两条语句中的任意一条来进行设置：
 
 ```sql
 语句一：SET GLOBAL default_storage_engine = MyISAM;
 语句二：SET @@GLOBAL.default_storage_engine = MyISAM;
-```sql
+```
 如果只想对本客户端生效，也可以选择下面三条语句中的任意一条来进行设置：
 
 ```sql
 语句一：SET SESSION default_storage_engine = MyISAM;
 语句二：SET @@SESSION.default_storage_engine = MyISAM;
 语句三：SET default_storage_engine = MyISAM;
-```sql
+```
 从上面的`语句三`也可以看出，<span style="color:red">如果在设置系统变量的语句中省略了作用范围，默认的作用范围就是`SESSION`</span>。也就是说`SET 系统变量名 = 值`和`SET SESSION 系统变量名 = 值`是等价的。
 
 ##### 查看不同作用范围的系统变量
@@ -472,7 +472,7 @@ SET [@@(GLOBAL|SESSION).]var_name = XXX;
 
 ```sql
 SHOW [GLOBAL|SESSION] VARIABLES [LIKE 匹配的模式];
-```sql
+```
 下面我们演示一下完整的设置并查看系统变量的过程：
 
 ```sql
@@ -512,12 +512,12 @@ mysql> SHOW GLOBAL VARIABLES LIKE 'default_storage_engine';
 1 row in set (0.00 sec)
 
 mysql>
-```sql
+```
 可以看到，最初`default_storage_engine`的系统变量无论是在`GLOBAL`作用范围上还是在`SESSION`作用范围上的值都是`InnoDB`，我们在`SESSION`作用范围把它的值设置为`MyISAM`之后，可以看到`GLOBAL`作用范围的值并没有改变。
 
 ```sql
 小贴士：如果某个客户端改变了某个系统变量在`GLOBAL`作用范围的值，并不会影响该系统变量在当前已经连接的客户端作用范围为`SESSION`的值，只会影响后续连入的客户端在作用范围为`SESSION`的值。
-```sql
+```
 ##### 注意事项
 
 - <span style="color:red">并不是所有系统变量都具有`GLOBAL`和`SESSION`的作用范围</span>。
@@ -548,7 +548,7 @@ mysql>
 
 ```sql
 SHOW [GLOBAL|SESSION] STATUS [LIKE 匹配的模式];
-```sql
+```
 类似的，如果我们不写明作用范围，默认的作用范围是`SESSION`，比方说这样：
 
 ```sql
@@ -564,7 +564,7 @@ mysql> SHOW STATUS LIKE 'thread%';
 4 rows in set (0.00 sec)
 
 mysql>
-```sql
+```
 所有以`Thread`开头的`SESSION`作用范围的状态变量就都被展示出来了。
 
 <div STYLE="page-break-after: always;"></div>

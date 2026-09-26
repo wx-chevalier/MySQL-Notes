@@ -64,7 +64,7 @@ mysql> INSERT INTO t1 (message) VALUES ('Testing'),('table'),('t1');
 mysql> INSERT INTO t2 (message) VALUES ('Testing'),('table'),('t2');
 mysql> CREATE TABLE total (a INT NOT NULL AUTO_INCREMENT,message CHAR(20), INDEX(a))
        ENGINE=MERGE UNION=(t1,t2) INSERT_METHOD=LAST;
-```sql
+```
 创建表时可以通过 `INSERT_METHOD` 选项来控制 MERGE 表的插入：使用 `FIRST` 或 `LAST` 分别表示在第一个或最后一个基础表中进行插入；如果未指定 INSERT_METHOD 或者设置值为 NO ，则表示不允许在 MERGE 表上执行插入操作。MERGE 表支持 SELECT，DELETE，UPDATE 和 DELETE 语句，示例如下：
 
 ```sql
@@ -79,7 +79,7 @@ mysql>  SELECT * FROM total;
 | 2 | table   |
 | 3 | t2      |
 +---+---------+
-```sql
+```
 ## 二、索引
 
 ### 2.1 B+ tree 数据结构
@@ -206,13 +206,13 @@ InnoDB 存储引擎支持以下三种锁的算法：
 ```sql
 -- 利用行锁可以防止其他事务更新或删除该行
 SELECT c1 FROM t WHERE c1 = 10 FOR UPDATE;
-```sql
+```
 **Gap Lock**：间隙锁，锁定一个范围，但不包括记录本身，主要用于解决幻读问题，示例如下：
 
 ```sql
 -- 利用间隙锁可以阻止其他事务将值15插入列 t.c1
 SELECT c1 FROM t WHERE c1 BETWEEN 10 and 20 FOR UPDATE;
-```sql
+```
 **Next-Key Lock**：等价于 行锁+间隙锁，既锁定范围，也锁定记录本身。可以用于解决幻读中的 ”当前读“ 的问题。
 
 ## 四、事务

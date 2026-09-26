@@ -12,18 +12,18 @@ mysql> SHOW VARIABLES LIKE 'optimizer_trace';
 | optimizer_trace | enabled=off,one_line=off |
 +-----------------+--------------------------+
 1 row in set (0.02 sec)
-```sql
+```
 可以看到`enabled`值为`off`，表明这个功能默认是关闭的。
 
 ```sql
 小贴士：one_line的值是控制输出格式的，如果为on那么所有输出都将在一行中展示，不适合人阅读，所以我们就保持其默认值为off吧。
-```sql
+```
 如果想打开这个功能，必须首先把`enabled`的值改为`on`，就像这样：
 
 ```sql
 mysql> SET optimizer_trace="enabled=on";
 Query OK, 0 rows affected (0.00 sec)
-```sql
+```
 然后我们就可以输入我们想要查看优化过程的查询语句，当该查询语句执行完成后，就可以到`information_schema`数据库下的`OPTIMIZER_TRACE`表中查看完整的优化过程。这个`OPTIMIZER_TRACE`表有 4 个列，分别是：
 
 - `QUERY`：表示我们的查询语句。
@@ -48,7 +48,7 @@ SELECT * FROM information_schema.OPTIMIZER_TRACE;
 
 # 5. 当你停止查看语句的优化过程时，把optimizer trace功能关闭
 SET optimizer_trace="enabled=off";
-```sql
+```
 现在我们有一个搜索条件比较多的查询语句，它的执行计划如下：
 
 ```sql
@@ -63,7 +63,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE
 |  1 | SIMPLE      | s1    | NULL       | range | idx_key2,idx_key1,idx_key3 | idx_key2 | 5       | NULL |   12 |     0.42 | Using index condition; Using where |
 +----+-------------+-------+------------+-------+----------------------------+----------+---------+------+------+----------+------------------------------------+
 1 row in set, 1 warning (0.00 sec)
-```sql
+```
 可以看到该查询可能使用到的索引有 3 个，那么为什么优化器最终选择了`idx_key2`而不选择其他的索引或者直接全表扫描呢？这时候就可以通过`otpimzer trace`功能来查看优化器的具体工作过程：
 
 ```sql
@@ -76,7 +76,7 @@ SELECT * FROM s1 WHERE
     common_field = 'abc';
 
 SELECT * FROM information_schema.OPTIMIZER_TRACE\G
-```sql
+```
 我们直接看一下通过查询`OPTIMIZER_TRACE`表得到的输出（我使用`#`后跟随注释的形式为大家解释了优化过程中的一些比较重要的点，大家重点关注一下）：
 
 ```sql
@@ -361,7 +361,7 @@ MISSING_BYTES_BEYOND_MAX_MEM_SIZE: 0
 INSUFFICIENT_PRIVILEGES: 0
 
 1 row in set (0.00 sec)
-```sql
+```
 大家看到这个输出的第一感觉就是这文本也太多了点儿吧，其实这只是优化器执行过程中的一小部分，设计`MySQL`的大佬可能会在之后的版本中添加更多的优化过程信息。不过杂乱之中其实还是蛮有规律的，优化过程大致分为了三个阶段：
 
 - `prepare`阶段

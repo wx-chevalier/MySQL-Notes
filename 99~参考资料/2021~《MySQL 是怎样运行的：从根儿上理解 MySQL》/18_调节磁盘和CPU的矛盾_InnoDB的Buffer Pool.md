@@ -13,7 +13,7 @@
 ```sql
 [server]
 innodb_buffer_pool_size = 268435456
-```sql
+```
 其中，`268435456`的单位是字节，也就是我指定`Buffer Pool`的大小为`256M`。需要注意的是，`Buffer Pool`也不能太小，最小值为`5M`(当小于该值时会自动设置成`5M`)。
 
 ### Buffer Pool 内部组成
@@ -28,7 +28,7 @@ innodb_buffer_pool_size = 268435456
 
 ```sql
 小贴士：每个控制块大约占用缓存页大小的5%，在MySQL5.7.21这个版本中，每个控制块占用的大小是808字节。而我们设置的innodb_buffer_pool_size并不包含这部分控制块占用的内存空间大小，也就是说InnoDB在为Buffer Pool向操作系统申请连续的内存空间时，这片连续的内存空间一般会比innodb_buffer_pool_size的值大5%左右。
-```sql
+```
 ### free 链表的管理
 
 当我们最初启动`MySQL`服务器的时候，需要完成对`Buffer Pool`的初始化过程，就是先向操作系统申请`Buffer Pool`的内存空间，然后把它划分成若干对控制块和缓存页。但是此时并没有真实的磁盘页被缓存到`Buffer Pool`中（因为还没有用到），之后随着程序的运行，会不断的有磁盘上的页被缓存到`Buffer Pool`中。那么问题来了，从磁盘上读取一个页到`Buffer Pool`中的时候该放到哪个缓存页的位置呢？或者说怎么区分`Buffer Pool`中哪些缓存页是空闲的，哪些已经被使用了呢？<span style="color:red">我们最好在某个地方记录一下 Buffer Pool 中哪些缓存页是可用的</span>，这个时候缓存页对应的`控制块`就派上大用场了，我们可以<span style="color:red">把所有空闲的缓存页对应的控制块作为一个节点放到一个链表中</span>，这个链表也可以被称作`free链表`（或者说空闲链表）。刚刚完成初始化的`Buffer Pool`中所有的缓存页都是空闲的，所以每一个缓存页对应的控制块都会被加入到`free链表`中，假设该`Buffer Pool`中可容纳的缓存页数量为`n`，那增加了`free链表`的效果图就是这样的：
@@ -39,7 +39,7 @@ innodb_buffer_pool_size = 268435456
 
 ```sql
 小贴士：链表基节点占用的内存空间并不大，在MySQL5.7.21这个版本里，每个基节点只占用40字节大小。后边我们即将介绍许多不同的链表，它们的基节点和free链表的基节点的内存分配方式是一样一样的，都是单独申请的一块40字节大小的内存空间，并不包含在为Buffer Pool申请的一大片连续内存空间之内。
-```sql
+```
 有了这个`free链表`之后事儿就好办了，每当需要从磁盘中加载一个页到`Buffer Pool`中时，就从`free链表`中取一个空闲的缓存页，并且把该缓存页对应的`控制块`的信息填上（就是该页所在的表空间、页号之类的信息），然后把该缓存页对应的`free链表`节点从链表中移除，表示该缓存页已经被使用了～
 
 ### 缓存页的哈希处理
@@ -50,7 +50,7 @@ innodb_buffer_pool_size = 268435456
 
 ```sql
 小贴士：什么？你别告诉我你不知道哈希表是什么？我们这个文章不是讲哈希表的，如果你不会那就去找本数据结构的书看看吧～ 什么？外头的书看不懂？别急，等我～
-```sql
+```
 所以我们可以用`表空间号 + 页号`作为`key`，`缓存页`作为`value`创建一个哈希表，在需要访问某个页的数据时，先从哈希表中根据`表空间号 + 页号`看看有没有对应的缓存页，如果有，直接使用该缓存页就好，如果没有，那就从`free链表`中选一个空闲的缓存页，然后把磁盘中对应的页加载到该缓存页的位置。
 
 ### flush 链表的管理
@@ -124,18 +124,18 @@ mysql> SHOW VARIABLES LIKE 'innodb_old_blocks_pct';
 | innodb_old_blocks_pct | 37    |
 +-----------------------+-------+
 1 row in set (0.01 sec)
-```sql
+```
 从结果可以看出来，默认情况下，`old`区域在`LRU链表`中所占的比例是`37%`，也就是说`old`区域大约占`LRU链表`的`3/8`。这个比例我们是可以设置的，我们可以在启动时修改`innodb_old_blocks_pct`参数来控制`old`区域在`LRU链表`中所占的比例，比方说这样修改配置文件：
 
 ```sql
 [server]
 innodb_old_blocks_pct = 40
-```sql
+```
 这样我们在启动服务器后，`old`区域占`LRU链表`的比例就是`40%`。当然，如果在服务器运行期间，我们也可以修改这个系统变量的值，不过需要注意的是，这个系统变量属于`全局变量`，一经修改，会对所有客户端生效，所以我们只能这样修改：
 
 ```sql
 SET GLOBAL innodb_old_blocks_pct = 40;
-```sql
+```
 有了这个被划分成`young`和`old`区域的`LRU`链表之后，设计`InnoDB`的大佬就可以针对我们上面提到的两种可能降低缓存命中率的情况进行优化了：
 
 - 针对预读的页面可能不进行后续访情况的优化
@@ -156,7 +156,7 @@ mysql> SHOW VARIABLES LIKE 'innodb_old_blocks_time';
 | innodb_old_blocks_time | 1000  |
 +------------------------+-------+
 1 row in set (0.01 sec)
-```sql
+```
 这个`innodb_old_blocks_time`的默认值是`1000`，它的单位是毫秒，也就意味着对于从磁盘上被加载到`LRU`链表的`old`区域的某个页来说，如果第一次和最后一次访问该页面的时间间隔小于`1s`（很明显在一次全表扫描的过程中，多次访问一个页面中的时间不会超过`1s`），那么该页是不会被加入到`young`区域的～ 当然，像`innodb_old_blocks_pct`一样，我们也可以在服务器启动或运行时设置`innodb_old_blocks_time`的值，这里就不赘述了，你自己试试吧～ 这里需要注意的是，如果我们把`innodb_old_blocks_time`的值设置为`0`，那么每次我们访问一个页面时就会把该页面放到`young`区域的头部。
 
 综上所述，正是因为将`LRU`链表划分为`young`和`old`区域这两个部分，又添加了`innodb_old_blocks_time`这个系统变量，才使得预读机制和全表扫描造成的缓存命中率降低的问题得到了遏制，因为用不到的预读页面以及全表扫描的页面都只会被放到`old`区域，而不影响`young`区域中的缓存页。
@@ -167,7 +167,7 @@ mysql> SHOW VARIABLES LIKE 'innodb_old_blocks_time';
 
 ```sql
 小贴士：我们之前介绍随机预读的时候曾说，如果Buffer Pool中有某个区的13个连续页面就会触发随机预读，这其实是不严谨的（不幸的是MySQL文档就是这么说的[摊手]），其实还要求这13个页面是非常热的页面，所谓的非常热，指的是这些页面在整个young区域的头1/4处。
-```sql
+```
 还有没有什么别的针对`LRU链表`的优化措施呢？当然有啊，你要是好好学，写篇论文，写本书都不是问题，可是这毕竟是一个介绍`MySQL`基础知识的文章，再说多了篇幅就受不了了，也影响大家的阅读体验，所以适可而止，想了解更多的优化知识，自己去看源码或者更多关于`LRU`链表的知识喽～ 但是不论怎么优化，千万别忘了我们的初心：<span style="color:red">尽量高效的提高 **_Buffer Pool_** 的缓存命中率</span>。
 
 ### 其他的一些链表
@@ -176,7 +176,7 @@ mysql> SHOW VARIABLES LIKE 'innodb_old_blocks_time';
 
 ```sql
 小贴士：我们压根儿没有深入介绍过InnoDB中的压缩页，对上面的这些链表也只是为了完整性顺便提一下，如果你看不懂千万不要抑郁，因为我压根儿就没打算向大家介绍它们。
-```sql
+```
 ### 刷新脏页到磁盘
 
 后台有专门的线程每隔一段时间负责把脏页刷新到磁盘，这样可以不影响用户线程处理正常的请求。主要有两种刷新路径：
@@ -200,19 +200,19 @@ mysql> SHOW VARIABLES LIKE 'innodb_old_blocks_time';
 ```sql
 [server]
 innodb_buffer_pool_instances = 2
-```sql
+```
 这样就表明我们要创建 2 个`Buffer Pool`实例，示意图就是这样：
 
 ![][18-05]
 
 ```sql
 小贴士：为了简便，我只把各个链表的基节点画出来了，大家应该心里清楚这些链表的节点其实就是每个缓存页对应的控制块！
-```sql
+```
 那每个`Buffer Pool`实例实际占多少内存空间呢？其实使用这个公式算出来的：
 
 ```sql
 innodb_buffer_pool_size/innodb_buffer_pool_instances
-```sql
+```
 也就是总共的大小除以实例的个数，结果就是每个`Buffer Pool`实例占用的大小。
 
 不过也不是说`Buffer Pool`实例创建的越多越好，分别管理各个`Buffer Pool`也是需要性能开销的，设计`InnoDB`的大佬们规定：<span style="color:red">当 innodb_buffer_pool_size 的值小于 1G 的时候设置多个实例是无效的，InnoDB 会默认把 innodb_buffer_pool_instances 的值修改为 1</span>。而我们鼓励在`Buffer Pool`大小或等于 1G 的时候设置多个`Buffer Pool`实例。
@@ -229,7 +229,7 @@ innodb_buffer_pool_size/innodb_buffer_pool_instances
 
 ```sql
 小贴士：为什么不允许在服务器运行过程中修改innodb_buffer_pool_chunk_size的值？还不是因为innodb_buffer_pool_chunk_size的值代表InnoDB向操作系统申请的一片连续的内存空间的大小，如果你在服务器运行过程中修改了该值，就意味着要重新向操作系统申请连续的内存空间并且将原先的缓存页和它们对应的控制块复制到这个新的内存空间中，这是十分耗时的操作！另外，这个innodb_buffer_pool_chunk_size的值并不包含缓存页对应的控制块的内存空间大小，所以实际上InnoDB向操作系统申请连续内存空间时，每个chunk的大小要比innodb_buffer_pool_chunk_size的值大一些，约5%。
-```sql
+```
 ### 配置 Buffer Pool 时的注意事项
 
 - `innodb_buffer_pool_size`必须是`innodb_buffer_pool_chunk_size × innodb_buffer_pool_instances`的倍数（这主要是想保证每一个`Buffer Pool`实例中包含的`chunk`数量相同）。
@@ -334,7 +334,7 @@ I/O sum[134264]:cur[144], unzip sum[16]:cur[0]
 (...省略后边的许多状态)
 
 mysql>
-```sql
+```
 我们来详细看一下这里边的每个值都代表什么意思：
 
 - `Total memory allocated`：代表`Buffer Pool`向操作系统申请的连续内存空间大小，包括全部控制块、缓存页、以及碎片的大小。

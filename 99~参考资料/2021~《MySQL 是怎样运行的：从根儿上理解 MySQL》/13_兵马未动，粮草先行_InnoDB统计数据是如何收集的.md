@@ -21,7 +21,7 @@
 ```sql
 CREATE TABLE 表名 (...) Engine=InnoDB, STATS_PERSISTENT = (1|0);
 ALTER TABLE 表名 Engine=InnoDB, STATS_PERSISTENT = (1|0);
-```sql
+```
 当`STATS_PERSISTENT=1`时，表明我们想把该表的统计数据永久的存储到磁盘上，当`STATS_PERSISTENT=0`时，表明我们想把该表的统计数据临时的存储到内存中。如果我们在创建表时未指定`STATS_PERSISTENT`属性，那默认采用系统变量`innodb_stats_persistent`的值作为该属性的值。
 
 ## 基于磁盘的永久性统计数据
@@ -37,7 +37,7 @@ mysql> SHOW TABLES FROM mysql LIKE 'innodb%';
 | innodb_table_stats        |
 +---------------------------+
 2 rows in set (0.01 sec)
-```sql
+```
 可以看到，这两个表都位于`mysql`系统数据库下面，其中：
 
 - `innodb_table_stats`存储了关于表的统计数据，每一条记录对应着一个表的统计数据。
@@ -70,7 +70,7 @@ mysql> SELECT * FROM mysql.innodb_table_stats;
 | xiaohaizi     | single_table  | 2018-12-10 17:03:13 |   9693 |                   97 |                      175 |
 +---------------+---------------+---------------------+--------+----------------------+--------------------------+
 3 rows in set (0.01 sec)
-```sql
+```
 可以看到我们熟悉的`single_table`表的统计信息就对应着`mysql.innodb_table_stats`的第三条记录。几个重要统计信息项的值如下：
 
 - `n_rows`的值是`9693`，表明`single_table`表中大约有`9693`条记录，注意这个数据是估计值。
@@ -181,7 +181,7 @@ mysql> SELECT * FROM mysql.innodb_index_stats WHERE table_name = 'single_table';
 | xiaohaizi     | single_table | idx_key_part | 2018-12-14 14:24:46 | size         |         97 |        NULL | Number of pages in the index      |
 +---------------+--------------+--------------+---------------------+--------------+------------+-------------+-----------------------------------+
 20 rows in set (0.03 sec)
-```sql
+```
 这个结果有点儿多，正确查看这个结果的方式是这样的：
 
 - 先查看`index_name`列，这个列说明该记录是哪个索引的统计信息，从结果中我们可以看出来，`PRIMARY`索引（也就是主键）占了 3 条记录，`idx_key_part`索引占了 6 条记录。
@@ -300,7 +300,7 @@ mysql> SELECT * FROM mysql.innodb_index_stats WHERE table_name = 'single_table';
 | NULL |
 | NULL |
 +------+
-```sql
+```
 此时计算这个`col`列中不重复的值的数量就有下面的分歧：
 
 - 有的人认为`NULL`值代表一个未确定的值，所以设计`MySQL`的大佬才认为任何和`NULL`值做比较的表达式的值都为`NULL`，就是这样：

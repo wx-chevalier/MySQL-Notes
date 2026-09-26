@@ -46,7 +46,7 @@
 
 ```sql
 小贴士：如果采用循环使用的方式向redo日志文件组里写数据的话，那岂不是要追尾，也就是后写入的redo日志覆盖掉前面写的redo日志？当然可能了！所以设计InnoDB的大佬提出了checkpoint的概念，稍后我们重点介绍～
-```sql
+```
 ### redo 日志文件格式
 
 我们前面说过`log buffer`本质上是一片连续的内存空间，被划分成了若干个`512`字节大小的`block`。<span style="color:red">将 log buffer 中的 redo 日志刷新到磁盘的本质就是把 block 的镜像写入日志文件中</span>，所以`redo`日志文件其实也是由若干个`512`字节大小的 block 组成。
@@ -129,7 +129,7 @@
 
 ```sql
 小贴士：为什么初始的lsn值为8704呢？我也不太清楚，人家就这么规定的。其实你也可以规定你一生下来算1岁，只要保证随着时间的流逝，你的年龄不断增长就好了。
-```sql
+```
 从上面的描述中可以看出来，<span style="color:red">每一组由 mtr 生成的 redo 日志都有一个唯一的 LSN 值与其对应，LSN 值越小，说明 redo 日志产生的越早</span>。
 
 ### flushed_to_disk_lsn
@@ -157,7 +157,7 @@
 
 ```sql
 小贴士：应用程序向磁盘写入文件时其实是先写到操作系统的缓冲区中去，如果某个写入操作要等到操作系统确认已经写到磁盘时才返回，那需要调用一下操作系统提供的fsync函数。其实只有当系统执行了fsync函数后，flushed_to_disk_lsn的值才会跟着增长，当仅仅把log buffer中的日志写入到操作系统缓冲区却没有显式的刷新到磁盘时，另外的一个称之为write_lsn的值跟着增长。不过为了大家理解上的方便，我们在讲述时把flushed_to_disk_lsn和write_lsn的概念混淆了起来。
-```sql
+```
 ### lsn 值和 redo 日志文件偏移量的对应关系
 
 因为`lsn`的值是代表系统写入的`redo`日志量的一个总和，一个`mtr`中产生多少日志，`lsn`的值就增加多少（当然有时候要加上`log block header`和`log block trailer`的大小），这样`mtr`产生的日志写到磁盘中时，很容易计算某一个`lsn`值在`redo`日志文件组中的偏移量，如图：
@@ -248,7 +248,7 @@ Last checkpoint at  124052494
 24 log i/o's done, 2.00 log i/o's/second
 ----------------------
 (...省略后边的许多状态)
-```sql
+```
 其中：
 
 - `Log sequence number`：代表系统中的`lsn`值，也就是当前系统已经写入的`redo`日志量，包括写入`log buffer`中的日志。
@@ -315,7 +315,7 @@ Last checkpoint at  124052494
 
 ```sql
 ((lsn / 512) & 0x3FFFFFFFUL) + 1
-```sql
+```
 这个公式里的`0x3FFFFFFFUL`可能让大家有点困惑，其实它的二进制表示可能更亲切一点：
 
 ![][21-23]

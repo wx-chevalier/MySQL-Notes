@@ -42,7 +42,7 @@ mysqldump [options] db_name [tbl_name ...]
 mysqldump [options] --databases db_name ...
 # 备份当前数据库实例中的所有表
 mysqldump [options] --all-databases
-```sql
+```
 options 代表可选操作，常用的可选参数如下：
 
 - **--host=host_name，-h host_name**
@@ -117,7 +117,7 @@ mysqldump  -uroot -p --databases employees > employees_bak.sql
 
 # 恢复雇员库
 mysql -uroot -p  < employees_bak.sql
-```sql
+```
 单表备份：
 
 ```shell
@@ -127,7 +127,7 @@ mysqldump  -uroot -p --single-transaction employees titles > titles_bak.sql
 # 恢复雇员库中的职位表
 mysql> use employees;
 mysql> source /root/mysqldata/titles_bak.sql;
-```sql
+```
 ### 2.3 增量备份
 
 mysqldump 本身并不能直接进行增量备份，需要通过分析二进制日志的方式来完成。具体示例如下：
@@ -138,12 +138,12 @@ mysqldump 本身并不能直接进行增量备份，需要通过分析二进制�
 
 ```shell
 mysqldump -uroot -p --master-data=2 --flush-logs employees titles > titles_bak.sql
-```sql
+```
 使用 more 命令查看备份文件，此时可以在文件开头看到 CHANGE MASTER 语句，语句中包含了二进制日志的名称和偏移量信息，具体如下：
 
 ```sql
 -- CHANGE MASTER TO MASTER_LOG_FILE='mysql-bin.000004', MASTER_LOG_POS=155;
-```sql
+```
 #### 2. 增量恢复
 
 对表内容进行任意修改，然后通过分析二进制日志文件来生成增量备份的脚本文件，示例如下：
@@ -151,14 +151,14 @@ mysqldump -uroot -p --master-data=2 --flush-logs employees titles > titles_bak.s
 ```shell
 mysqlbinlog --start-position=155 \
 --database=employees  ${MYSQL_HOME}/data/mysql-bin.000004 > titles_inr_bak_01.sql
-```sql
+```
 需要注意的是，在实际生产环境中，可能在全量备份后与增量备份前的时间间隔里生成了多份二进制文件，此时需要对每一个二进制文件都执行相同的命令：
 
 ```shell
 mysqlbinlog --database=employees  ${MYSQL_HOME}/data/mysql-bin.000005 > titles_inr_bak_02.sql
 mysqlbinlog --database=employees  ${MYSQL_HOME}/data/mysql-bin.000006 > titles_inr_bak_03.sql
 .....
-```sql
+```
 之后将全备脚本 ( titles_bak.sql )，以及所有的增备脚本 ( inr_01.sql，inr_02.sql .... ) 通过 source 命令导入即可，这样就完成了全量 + 增量的恢复。
 
 ## 三、mysqlpump
@@ -225,7 +225,7 @@ yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm
 
 # 安装
 yum install percona-xtrabackup-80
-```sql
+```
 ### 4.2 全量备份
 
 全量备份的具体步骤如下：
@@ -236,7 +236,7 @@ Xtrabackup 全量备份的基本语句如下，可以使用 target-dir 指明备
 
 ```shell
 xtrabackup --backup  --user=root --password --parallel=3  --target-dir=/data/backups/
-```sql
+```
 以上进行的是整个数据库实例的备份，如果需要备份指定数据库，则可以使用 --databases 进行指定。
 
 另外一个容易出现的异常是：Xtrabackup 在进行备份时，默认会去 `/var/lib/mysql/mysql.sock` 文件里获取数据库的 socket 信息，如果你修改了数据库的 socket 配置，则需要使用 --socket 参数进行重新指定，否则会抛出找不到连接的异常。备份完整后需要立即执行的另外一个操作是 prepare （准备备份）。
@@ -247,7 +247,7 @@ xtrabackup --backup  --user=root --password --parallel=3  --target-dir=/data/bac
 
 ```shell
 xtrabackup --prepare --target-dir=/data/backups/
-```sql
+```
 需要特别注意的在该阶段不要随意中断 xtrabackup 进程，因为这可能会导致数据文件损坏，备份将无法使用。
 
 #### 3. 恢复备份
@@ -260,12 +260,12 @@ rm -rf /usr/app/mysql-8.0.17/data/*
 
 # 将备份文件拷贝到 data 目录下
 xtrabackup --copy-back --target-dir=/data/backups/
-```sql
+```
 copy-back 命令只需要指定备份文件的位置，不需要指定 MySQL 数据目录的位置，因为 Xtrabackup 会自动从 `/etc/my.cnf` 上获取 MySQL 的相关信息，包括数据目录的位置。如果不需要保留备份文件，可以直接使用 `--move-back` 命令，代表直接将备份文件移动到数据目录下。此时数据目录的所有者通常为执行命令的用户，需要更改为 mysql 用户，命令如下：
 
 ```shell
 chown -R mysql:mysql /usr/app/mysql-8.0.17/data
-```sql
+```
 再次启动即可完成备份恢复。
 
 ### 4.3 增量备份
@@ -278,38 +278,38 @@ chown -R mysql:mysql /usr/app/mysql-8.0.17/data
 
 ```shell
 xtrabackup  --user=root --password --backup  --target-dir=/data/backups/base/
-```sql
+```
 之后修改库中任意数据，然后进行第一次增量备份，此时需要使用 `incremental-basedir` 指定基础目录为全备目录：
 
 ```shell
 xtrabackup  --user=root --password --backup  --target-dir=/data/backups/inc1 \
 --incremental-basedir=/data/backups/base
-```sql
+```
 再修改库中任意数据，然后进行第二次增量备份，此时需要使用 `incremental-basedir` 指定基础目录为上一次增备目录：
 
 ```shell
 xtrabackup  --user=root --password --backup  --target-dir=/data/backups/inc2 \
 --incremental-basedir=/data/backups/inc1
-```sql
+```
 #### 2. 准备备份
 
 准备基础备份：
 
 ```shell
 xtrabackup --prepare --apply-log-only --target-dir=/data/backups/base
-```sql
+```
 将第一次备份作用于全备数据：
 
 ```shell
 xtrabackup --prepare --apply-log-only --target-dir=/data/backups/base \
 --incremental-dir=/data/backups/inc1
-```sql
+```
 将第二次备份作用于全备数据：
 
 ```shell
 xtrabackup --prepare --target-dir=/data/backups/base \
 --incremental-dir=/data/backups/inc2
-```sql
+```
 在准备备份时候，除了最后一次增备外，其余的准备命令都需要加上 `--apply-log-only` 选项来阻止事务的回滚，因为备份时未提交的事务可能正在进行，并可能在下一次增量备份中提交，如果不进行阻止，那么增量备份将没有任何意义。
 
 #### 3. 恢复备份
@@ -320,7 +320,7 @@ xtrabackup --prepare --target-dir=/data/backups/base \
 xtrabackup --copy-back --target-dir=/data/backups/base
 # 必须修改文件权限，否则无法启动
 chown -R mysql:mysql /usr/app/mysql-8.0.17/data
-```sql
+```
 此时增量备份就已经完成。需要说明的是：按照上面的情况，如果第二次备份之后发生了宕机，那么第二次备份后到宕机前的数据依然没法通过 Xtrabackup 进行恢复，此时就只能采用上面介绍的分析二进制日志的恢复方法。由此可以看出，无论是采用何种备份方式，二进制日志都是非常重要的，因此最好对其进行实时备份。
 
 ## 五、二进制日志的备份
@@ -331,7 +331,7 @@ chown -R mysql:mysql /usr/app/mysql-8.0.17/data
 mysqlbinlog --read-from-remote-server --raw --stop-never \
 --host=主机名 --port=3306 \
 --user=用户名 --password=密码  初始复制时的日志文件名
-```sql
+```
 需要注意的是这里的用户必须具有 replication slave 权限，因为上述命令本质上是模拟主从复制架构下，从节点通过 IO 线程不断去获取主节点的二进制日志，从而达到备份的目的。
 
 ## 参考资料

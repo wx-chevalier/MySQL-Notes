@@ -9,7 +9,7 @@ mysql> EXPLAIN SELECT * FROM employees;
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------+
 |  1 | SIMPLE      | employees | ALL  | NULL          | NULL | NULL    | NULL | 299379 | NULL  |
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------+
-```sql
+```
 注：本篇文章的测试数据来源于 MySQL 官方提供的 [Employees Sample Database](https://dev.mysql.com/doc/employee/en/)，其数据库结构如下：
 
 <div align="center"> <img src="https://gitee.com/heibaiying/Full-Stack-Notes/raw/master/pictures/employees-schema.png"/> </div>
@@ -28,7 +28,7 @@ mysql> EXPLAIN SELECT COUNT(1) FROM (SELECT emp_no FROM salaries) AS t;
 |  1 | PRIMARY     | <derived2> | ALL   | NULL          | NULL    | NULL    | NULL | 2757635 | NULL        |
 |  2 | DERIVED     | salaries   | index | NULL          | PRIMARY | 7       | NULL | 2757635 | Using index |
 +----+-------------+------------+-------+---------------+---------+---------+------+---------+-------------+
-```sql
+```
 ```shell
 # 查询工资大于500000或部门编号等于d007的所有雇员的编号
 mysql> EXPLAIN SELECT emp_no FROM salaries WHERE salary>500000 UNION ALL SELECT emp_no FROM dept_emp WHERE dept_no = "d007";
@@ -39,7 +39,7 @@ mysql> EXPLAIN SELECT emp_no FROM salaries WHERE salary>500000 UNION ALL SELECT 
 |  2 | UNION        | dept_emp   | ref  | dept_no       | dept_no | 4       | const |   91566 | Using where; Using index |
 | NULL | UNION RESULT | <union1,2> | ALL  | NULL          | NULL    | NULL    | NULL  |    NULL | Using temporary          |
 +----+--------------+------------+------+---------------+---------+---------+-------+---------+--------------------------+
-```sql
+```
 ## 2. select_type
 
 select_type 用于表示查询的类型，常见类型及其含义如下：
@@ -64,7 +64,7 @@ mysql> EXPLAIN SELECT first_name,(SELECT sum(salary) FROM salaries WHERE emp_no 
 |  1 | PRIMARY     | employees | const | PRIMARY       | PRIMARY | 4       | const |    1 | NULL  |
 |  2 | SUBQUERY    | salaries  | ref   | PRIMARY       | PRIMARY | 4       | const |   17 | NULL  |
 +----+-------------+-----------+-------+---------------+---------+---------+-------+------+-------+
-```sql
+```
 ## 3. table
 
 表示语句执行的目标表，除了正常的表名或表别名外，还会出现以下取值：
@@ -88,7 +88,7 @@ mysql> EXPLAIN SELECT * FROM employees WHERE emp_no = 10008;
 +----+-------------+-----------+-------+---------------+---------+---------+-------+------+-------+
 |  1 | SIMPLE      | employees | const | PRIMARY       | PRIMARY | 4       | const |    1 | NULL  |
 +----+-------------+-----------+-------+---------------+---------+---------+-------+------+-------+
-```sql
+```
 **3. eq_ref**：当连接使用的是完整的索引并且是 PRIMARY KEY 或 UNIQUE NOT NULL INDEX 时使用它。
 
 ```shell
@@ -100,7 +100,7 @@ mysql> EXPLAIN SELECT * FROM employees e,dept_emp d WHERE e.emp_no = d.emp_no AN
 |  1 | SIMPLE      | d     | ref    | PRIMARY,dept_no | dept_no | 4       | const              |    1 | Using index condition |
 |  1 | SIMPLE      | e     | eq_ref | PRIMARY         | PRIMARY | 4       | employees.d.emp_no |    1 | NULL                  |
 +----+-------------+-------+--------+-----------------+---------+---------+--------------------+------+-----------------------+
-```sql
+```
 **4. ref**：当连接使用的是前缀索引或连接条件不是 PRIMARY KEY 或 UNIQUE INDEX 时则使用它。
 
 ```shell
@@ -112,12 +112,12 @@ mysql> EXPLAIN SELECT * FROM employees e,dept_emp d WHERE e.emp_no = d.emp_no;
 |  1 | SIMPLE      | e     | ALL  | PRIMARY       | NULL    | NULL    | NULL               | 299379 | NULL  |
 |  1 | SIMPLE      | d     | ref  | PRIMARY       | PRIMARY | 4       | employees.e.emp_no |      1 | NULL  |
 +----+-------------+-------+------+---------------+---------+---------+--------------------+--------+-------+
-```sql
+```
 **5. ref_or_null**：类似于 ref 类型的查询，但是附加了对 NULL 值列的查询。示例语句如下：
 
 ```sql
 SELECT * FROM ref_table WHERE key_column=expr OR key_column IS NULL;
-```sql
+```
 **6. index_merge**：该联接类型表示使用了索引进行合并优化，示例如下：
 
 ```shell
@@ -127,7 +127,7 @@ mysql> EXPLAIN SELECT * FROM dept_emp WHERE dept_no = "d004" AND emp_no < 10020;
 +----+-------------+----------+-------------+-----------------+-----------------+---------+------+------+-----------------------------------------------+
 |  1 | SIMPLE      | dept_emp | index_merge | PRIMARY,dept_no | dept_no,PRIMARY | 8,4     | NULL |    1 | Using intersect(dept_no,PRIMARY); Using where |
 +----+-------------+----------+-------------+-----------------+-----------------+---------+------+------+-----------------------------------------------+
-```sql
+```
 **7. range**：使用索引进行范围扫描，常见于 between、>、< 这样的查询条件。
 
 ```shell
@@ -137,7 +137,7 @@ mysql> EXPLAIN SELECT * FROM employees WHERE emp_no > 10000;
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
 |  1 | SIMPLE      | employees | range | PRIMARY       | PRIMARY | 4       | NULL | 149689 | Using where |
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
-```sql
+```
 **8. index**：索引连接类型与 ALL 相同，只是扫描的是索引树，通常出现在索引是该查询的覆盖索引的情况：
 
 ```shell
@@ -147,7 +147,7 @@ mysql> EXPLAIN SELECT emp_no FROM employees;
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
 |  1 | SIMPLE      | employees | index | NULL          | PRIMARY | 4       | NULL | 299379 | Using index |
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
-```sql
+```
 **9. ALL**：全表扫描，效率最差的查找方式。
 
 ```shell
@@ -157,7 +157,7 @@ mysql> EXPLAIN SELECT * FROM employees WHERE first_name ="Bezalel";
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------------+
 |  1 | SIMPLE      | employees | ALL  | NULL          | NULL | NULL    | NULL | 299379 | Using where |
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------------+
-```sql
+```
 ## 5. possible_keys
 
 表示在执行过程中可能会用到哪些索引来进行优化。
@@ -192,7 +192,7 @@ mysql> EXPLAIN SELECT * FROM employees WHERE first_name = "Sumant";
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------------+
 |  1 | SIMPLE      | employees | ALL  | NULL          | NULL | NULL    | NULL | 299379 | Using where |
 +----+-------------+-----------+------+---------------+------+---------+------+--------+-------------+
-```sql
+```
 **2. Using filesort**：通常出现在 GROUP BY 或 ORDER BY 语句中，且排序或分组没有基于索引，此时需要使用文件在内存中进行排序。因为使用索引排序的性能好于使用文件排序，所以出现这种情况可以考虑通过添加索引进行优化。示例如下：
 
 ```shell
@@ -202,7 +202,7 @@ mysql> EXPLAIN SELECT * FROM employees ORDER BY first_name ;
 +----+-------------+-----------+------+---------------+------+---------+------+--------+----------------+
 |  1 | SIMPLE      | employees | ALL  | NULL          | NULL | NULL    | NULL | 299379 | Using filesort |
 +----+-------------+-----------+------+---------------+------+---------+------+--------+----------------+
-```sql
+```
 **3. Using index**：使用了覆盖索引进行查询，此时不需要访问表，从索引中就可以获取到所需的全部数据。示例如下：
 
 ```shell
@@ -212,7 +212,7 @@ mysql>  EXPLAIN SELECT emp_no FROM employees;
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
 |  1 | SIMPLE      | employees | index | NULL          | PRIMARY | 4       | NULL | 299379 | Using index |
 +----+-------------+-----------+-------+---------------+---------+---------+------+--------+-------------+
-```sql
+```
 **4. Using temporary**：表示需要使用临时表来处理查询，常出现在 GROUP BY 或 ORDER BY 语句中，示例如下：
 
 ```shell
@@ -222,7 +222,7 @@ mysql> EXPLAIN SELECT first_name,count(first_name) FROM employees GROUP BY first
 +----+-------------+-----------+------+---------------+------+---------+------+--------+---------------------------------+
 |  1 | SIMPLE      | employees | ALL  | NULL          | NULL | NULL    | NULL | 299379 | Using temporary; Using filesort |
 +----+-------------+-----------+------+---------------+------+---------+------+--------+---------------------------------+
-```sql
+```
 ## 参考资料
 
 更多参数的说明可以参考 MySQL 官方文档：https://dev.mysql.com/doc/refman/8.0/en/explain-output.html

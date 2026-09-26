@@ -24,7 +24,7 @@ mysql> SHOW VARIABLES LIKE 'datadir';
 | datadir       | /usr/local/var/mysql/ |
 +---------------+-----------------------+
 1 row in set (0.00 sec)
-```sql
+```
 从结果中可以看出，<span style="color:red">在我的计算机上</span>`MySQL`的数据目录就是`/usr/local/var/mysql/`，你用你的计算机试试呗～
 
 ## 数据目录的结构
@@ -55,7 +55,7 @@ mysql> SHOW DATABASES;
 | xiaohaizi          |
 +--------------------+
 7 rows in set (0.00 sec)
-```sql
+```
 可以看到在我的计算机上当前有 7 个数据库，其中`charset_demo_db`、`dahaizi`和`xiaohaizi`数据库是我们自定义的，其余 4 个数据库是属于 MySQL 自带的系统数据库。我们再看一下<span style="color:red">我的计算机上</span>的`数据目录`下的内容：
 
 ```sql
@@ -84,7 +84,7 @@ mysql> SHOW DATABASES;
 └── xiaohaizi
 
 6 directories, 16 files
-```sql
+```
 当然这个数据目录下的文件和子目录比较多，但是如果仔细看的话，除了`information_schema`这个系统数据库外，其他的数据库在`数据目录`下都有对应的子目录。这个`information_schema`比较特殊，设计 MySQL 的大佬们对它的实现进行了特殊对待，没有使用相应的数据库目录，我们忽略它的存在就好了。
 
 ### 表在文件系统中的表示
@@ -99,7 +99,7 @@ mysql> SHOW DATABASES;
 
 ```sql
 表名.frm
-```sql
+```
 比方说我们在`dahaizi`数据库下创建一个名为`test`的表：
 
 ```sql
@@ -110,7 +110,7 @@ mysql> CREATE TABLE test (
     ->     c1 INT
     -> );
 Query OK, 0 rows affected (0.03 sec)
-```sql
+```
 那在数据库`dahaizi`对应的子目录下就会创建一个名为`test.frm`的用于描述表结构的文件。值得注意的是，<span style="color:red">这个后缀名为.frm 是以二进制格式存储的，我们直接打开会是乱码的～</span> 你还不赶紧在你的计算机上创建个表试试～
 
 描述表结构的文件我们知道怎么存储了，那表中的数据存到什么文件中了呢？在这个问题上，不同的存储引擎就产生了分歧了，下面我们分别看一下`InnoDB`和`MyISAM`是用什么文件来保存表中数据的。
@@ -136,7 +136,7 @@ Query OK, 0 rows affected (0.03 sec)
 ```sql
 [server]
 innodb_data_file_path=data1:512M;data2:512M:autoextend
-```sql
+```
 这样在`MySQL`启动之后就会创建这两个 512M 大小的文件作为`系统表空间`，其中的`autoextend`表明这两个文件如果不够用会自动扩展`data2`文件的大小。
 
 我们也可以把`系统表空间`对应的文件路径不配置到`数据目录`下，甚至可以配置到单独的磁盘分区上，涉及到的启动参数就是`innodb_data_file_path`和`innodb_data_home_dir`，具体的配置逻辑挺绕的，我们这就不多介绍了，知道改哪个参数可以修改`系统表空间`对应的文件，有需要的时候到官方文档里一查就好了。
@@ -149,34 +149,34 @@ innodb_data_file_path=data1:512M;data2:512M:autoextend
 
 ```sql
 表名.ibd
-```sql
+```
 比方说假如我们使用了`独立表空间`去存储`xiaohaizi`数据库下的`test`表的话，那么在该表所在数据库对应的`xiaohaizi`目录下会为`test`表创建这两个文件：
 
 ```sql
 test.frm
 test.ibd
-```sql
+```
 其中`test.ibd`文件就用来存储`test`表中的数据和索引。当然我们也可以自己指定使用`系统表空间`还是`独立表空间`来存储数据，这个功能由启动参数`innodb_file_per_table`控制，比如说我们想刻意将表数据都存储到`系统表空间`时，可以在启动`MySQL`服务器的时候这样配置：
 
 ```sql
 [server]
 innodb_file_per_table=0
-```sql
+```
 当`innodb_file_per_table`的值为`0`时，代表使用系统表空间；当`innodb_file_per_table`的值为`1`时，代表使用独立表空间。不过`innodb_file_per_table`参数只对新建的表起作用，对于已经分配了表空间的表并不起作用。如果我们想把已经存在系统表空间中的表转移到独立表空间，可以使用下面的语法：
 
 ```sql
 ALTER TABLE 表名 TABLESPACE [=] innodb_file_per_table;
-```sql
+```
 或者把已经存在独立表空间的表转移到系统表空间，可以使用下面的语法：
 
 ```sql
 ALTER TABLE 表名 TABLESPACE [=] innodb_system;
-```sql
+```
 其中中括号扩起来的`=`可有可无，比方说我们想把`test`表从独立表空间移动到系统表空间，可以这么写：
 
 ```sql
 ALTER TABLE test TABLESPACE innodb_system;
-```sql
+```
 ##### 其他类型的表空间
 
 随着 MySQL 的发展，除了上述两种老牌表空间之外，现在还新提出了一些不同类型的表空间，比如通用表空间（general tablespace）、undo 表空间（undo tablespace）、临时表空间（temporary tablespace）等等的，具体情况我们就不细介绍了，等用到的时候再提。
@@ -189,7 +189,7 @@ ALTER TABLE test TABLESPACE innodb_system;
 test.frm
 test.MYD
 test.MYI
-```sql
+```
 其中`test.MYD`代表表的数据文件，也就是我们插入的用户记录；`test.MYI`代表表的索引文件，我们为该表创建的索引都会放到这个文件中。
 
 ### 视图在文件系统中的表示
