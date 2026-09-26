@@ -6,8 +6,7 @@ MySQL 提供了一个 EXPLAIN 命令, 它可以对 SELECT 语句进行分析, �
 explain SELECT id FROM ORDER_EXPENSE_SUMMARY
 WHERE STATUS = 'CHECKED' AND EXPENSE_BILL_NO = 'BF_20191112_20191118_PAY_1'
 ORDER BY GMT_CREATE DESC
-```
-
+```sql
 - id：表示 SQL 执行的顺序的标识,SQL 从大到小的执行。示例中 1 表示执行的第一条 SQL
 
 - select_type：表示 select 语句的子类型。
@@ -38,8 +37,7 @@ ORDER BY GMT_CREATE DESC
 EXPLAIN SELECT * FROM product WHERE name = '产品一'；
 --- key 为 null
 EXPLAIN SELECT * FROM product WHERE category = '类目一'；
-```
-
+```sql
 - SYSTEM，CONST 的特例，当表上只有一条元组匹配
 
 - CONST，WHERE 条件筛选后表上至多有一条元组匹配时，比如 WHERE ID = 2（ID 是主键，值为 2 的要么有一条要么没有）

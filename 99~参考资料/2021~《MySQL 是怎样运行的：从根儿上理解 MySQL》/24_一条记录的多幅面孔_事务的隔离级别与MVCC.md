@@ -4,28 +4,25 @@
 
 为了故事的顺利发展，我们需要创建一个表：
 
-```
+```sql
 CREATE TABLE hero (
     number INT,
     name VARCHAR(100),
     country varchar(100),
     PRIMARY KEY (number)
 ) Engine=InnoDB CHARSET=utf8;
-```
-
-```
+```sql
+```sql
 小贴士：注意我们把这个hero表的主键命名为number，而不是id，主要是想和后边要用到的事务id做区别，大家不用大惊小怪～
-```
-
+```sql
 然后向这个表里插入一条数据：
 
-```
+```sql
 INSERT INTO hero VALUES(1, '刘备', '蜀');
-```
-
+```sql
 现在表里的数据就是这样的：
 
-```
+```sql
 mysql> SELECT * FROM hero;
 +--------+--------+---------+
 | number | name   | country |
@@ -33,8 +30,7 @@ mysql> SELECT * FROM hero;
 |      1 | 刘备   | 蜀      |
 +--------+--------+---------+
 1 row in set (0.00 sec)
-```
-
+```sql
 ## 事务隔离级别
 
 我们知道`MySQL`是一个`客户端／服务器`架构的软件，对于同一个服务器来说，可以有若干个客户端与之连接，每个客户端与服务器连接上之后，就可以称之为一个会话（`Session`）。每个客户端都可以在自己的会话中向服务器发出请求语句，一个请求语句可能是某个事务的一部分，也就是对于服务器来说可能同时处理多个事务。在事务简介的章节中我们说过事务有一个称之为`隔离性`的特性，理论上在某个事务对某个数据进行访问时，其他事务应该进行排队，当该事务提交之后，其他事务才可以继续访问这个数据。但是这样子的话对性能影响太大，我们既想保持事务的`隔离性`，又想让服务器在处理访问同一数据的多个事务时性能尽量高些，鱼和熊掌不可得兼，舍一部分`隔离性`而取性能者也。
@@ -85,10 +81,9 @@ mysql> SELECT * FROM hero;
 
 我们上面介绍了几种并发事务执行过程中可能遇到的一些问题，这些问题也有轻重缓急之分，我们给这些问题按照严重性来排一下序：
 
-```
+```sql
 脏写 > 脏读 > 不可重复读 > 幻读
-```
-
+```sql
 我们上面所说的舍弃一部分隔离性来换取一部分性能在这里就体现在：<span style="color:red">设立一些隔离级别，隔离级别越低，越严重的问题就越可能发生</span>。有一帮人（并不是设计`MySQL`的大佬们）制定了一个所谓的`SQL标准`，在标准中设立了 4 个`隔离级别`：
 
 - `READ UNCOMMITTED`：未提交读。
@@ -124,21 +119,19 @@ mysql> SELECT * FROM hero;
 
 我们可以通过下面的语句修改事务的隔离级别：
 
-```
+```sql
 SET [GLOBAL|SESSION] TRANSACTION ISOLATION LEVEL level;
-```
-
+```sql
 其中的`level`可选值有 4 个：
 
-```
+```sql
 level: {
      REPEATABLE READ
    | READ COMMITTED
    | READ UNCOMMITTED
    | SERIALIZABLE
 }
-```
-
+```sql
 设置事务的隔离级别的语句中，在`SET`关键字后可以放置`GLOBAL`关键字、`SESSION`关键字或者什么都不放，这样会对不同范围的事务产生不同的影响，具体如下：
 
 - 使用`GLOBAL`关键字（在全局范围影响）：
@@ -180,7 +173,7 @@ level: {
 
 想要查看当前会话默认的隔离级别可以通过查看系统变量`transaction_isolation`的值来确定：
 
-```
+```sql
 mysql> SHOW VARIABLES LIKE 'transaction_isolation';
 +-----------------------+-----------------+
 | Variable_name         | Value           |
@@ -188,11 +181,10 @@ mysql> SHOW VARIABLES LIKE 'transaction_isolation';
 | transaction_isolation | REPEATABLE-READ |
 +-----------------------+-----------------+
 1 row in set (0.02 sec)
-```
-
+```sql
 或者使用更简便的写法：
 
-```
+```sql
 mysql> SELECT @@transaction_isolation;
 +-------------------------+
 | @@transaction_isolation |
@@ -200,12 +192,10 @@ mysql> SELECT @@transaction_isolation;
 | REPEATABLE-READ         |
 +-------------------------+
 1 row in set (0.00 sec)
-```
-
-```
+```sql
+```sql
 小贴士：我们也可以使用设置系统变量transaction_isolation的方式来设置事务的隔离级别，不过我们前面介绍过，一般系统变量只有GLOBAL和SESSION两个作用范围，而这个transaction_isolation却有3个（与上面 SET TRANSACTION ISOLATION LEVEL的语法相对应），设置语法上有些特殊，更多详情可以参见文档：https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_transaction_isolation。另外，transaction_isolation是在MySQL 5.7.20的版本中引入来替换tx_isolation的，如果你使用的是之前版本的MySQL，请将上述用到系统变量transaction_isolation的地方替换为tx_isolation。
-```
-
+```sql
 ## MVCC 原理
 
 ### 版本链
@@ -217,7 +207,7 @@ mysql> SELECT @@transaction_isolation;
 
 比方说我们的表`hero`现在只包含一条记录：
 
-```
+```sql
 mysql> SELECT * FROM hero;
 +--------+--------+---------+
 | number | name   | country |
@@ -225,24 +215,21 @@ mysql> SELECT * FROM hero;
 |      1 | 刘备   | 蜀      |
 +--------+--------+---------+
 1 row in set (0.07 sec)
-```
-
+```sql
 假设插入该记录的`事务id`为`80`，那么此刻该条记录的示意图如下所示：
 
 ![][24-05]
 
-```
+```sql
 小贴士：实际上insert undo只在事务回滚时起作用，当事务提交后，该类型的undo日志就没用了，它占用的Undo Log Segment也会被系统回收（也就是该undo日志占用的Undo页面链表要么被重用，要么被释放）。虽然真正的insert undo日志占用的存储空间被释放了，但是roll_pointer的值并不会被清除，roll_pointer属性占用7个字节，第一个比特位就标记着它指向的undo日志的类型，如果该比特位的值为1时，就代表着它zhi向的undo日志类型为insert undo。所以我们之后在画图时都会把insert undo给去掉，大家留意一下就好了。
-```
-
+```sql
 假设之后两个`事务id`分别为`100`、`200`的事务对这条记录进行`UPDATE`操作，操作流程如下：
 
 ![][24-06]
 
-```
+```sql
 小贴士：能不能在两个事务中交叉更新同一条记录呢？这不就是一个事务修改了另一个未提交事务修改过的数据，沦为了脏写了么？InnoDB使用锁来保证不会有脏写情况的发生，也就是在第一个事务更新了某条记录后，就会给这条记录加锁，另一个事务再次更新时就需要等待第一个事务提交了，把锁释放之后才可以继续更新。关于锁的更多细节我们后续的文章中再介绍～
-```
-
+```sql
 每次对记录进行改动，都会记录一条`undo日志`，每条`undo日志`也都有一个`roll_pointer`属性（`INSERT`操作对应的`undo日志`没有该属性，因为该记录并没有更早的版本），可以将这些`undo日志`都连起来，串成一个链表，所以现在的情况就像下图一样：
 
 ![][24-07]
@@ -278,7 +265,7 @@ mysql> SELECT * FROM hero;
 
 在`MySQL`中，`READ COMMITTED`和`REPEATABLE READ`隔离级别的的一个非常大的区别就是<span style="color:red">它们生成 ReadView 的时机不同</span>。我们还是以表`hero`为例来，假设现在表`hero`中只有一条由`事务id`为`80`的事务插入的一条记录：
 
-```
+```sql
 mysql> SELECT * FROM hero;
 +--------+--------+---------+
 | number | name   | country |
@@ -286,49 +273,44 @@ mysql> SELECT * FROM hero;
 |      1 | 刘备   | 蜀      |
 +--------+--------+---------+
 1 row in set (0.07 sec)
-```
-
+```sql
 接下来看一下`READ COMMITTED`和`REPEATABLE READ`所谓的<span style="color:red">生成 ReadView 的时机不同</span>到底不同在哪里。
 
 #### READ COMMITTED —— 每次读取数据前都生成一个 ReadView
 
 比方说现在系统里有两个`事务id`分别为`100`、`200`的事务在执行：
 
-```
+```sql
 # Transaction 100
 BEGIN;
 
 UPDATE hero SET name = '关羽' WHERE number = 1;
 
 UPDATE hero SET name = '张飞' WHERE number = 1;
-```
-
-```
+```sql
+```sql
 # Transaction 200
 BEGIN;
 
 # 更新了一些别的表的记录
 ...
-```
-
-```
+```sql
+```sql
 小贴士：再次强调一遍，事务执行过程中，只有在第一次真正修改记录时（比如使用INSERT、DELETE、UPDATE语句），才会被分配一个单独的事务id，这个事务id是递增的。所以我们才在Transaction 200中更新一些别的表的记录，目的是让它分配事务id。
-```
-
+```sql
 此刻，表`hero`中`number`为`1`的记录得到的版本链表如下所示：
 
 ![][24-08]
 
 假设现在有一个使用`READ COMMITTED`隔离级别的事务开始执行：
 
-```
+```sql
 # 使用READ COMMITTED隔离级别的事务
 BEGIN;
 
 # SELECT1：Transaction 100、200未提交
 SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
-```
-
+```sql
 这个`SELECT1`的执行过程如下：
 
 - 在执行`SELECT`语句时会先生成一个`ReadView`，`ReadView`的`m_ids`列表的内容就是`[100, 200]`，`min_trx_id`为`100`，`max_trx_id`为`201`，`creator_trx_id`为`0`。
@@ -338,7 +320,7 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
 
 之后，我们把`事务id`为`100`的事务提交一下，就像这样：
 
-```
+```sql
 # Transaction 100
 BEGIN;
 
@@ -347,11 +329,10 @@ UPDATE hero SET name = '关羽' WHERE number = 1;
 UPDATE hero SET name = '张飞' WHERE number = 1;
 
 COMMIT;
-```
-
+```sql
 然后再到`事务id`为`200`的事务中更新一下表`hero`中`number`为`1`的记录：
 
-```
+```sql
 # Transaction 200
 BEGIN;
 
@@ -361,15 +342,14 @@ BEGIN;
 UPDATE hero SET name = '赵云' WHERE number = 1;
 
 UPDATE hero SET name = '诸葛亮' WHERE number = 1;
-```
-
+```sql
 此刻，表`hero`中`number`为`1`的记录的版本链就长这样：
 
 ![][24-09]
 
 然后再到刚才使用`READ COMMITTED`隔离级别的事务中继续查找这个`number`为`1`的记录，如下：
 
-```
+```sql
 # 使用READ COMMITTED隔离级别的事务
 BEGIN;
 
@@ -378,8 +358,7 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
 
 # SELECT2：Transaction 100提交，Transaction 200未提交
 SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'张飞'
-```
-
+```sql
 这个`SELECT2`的执行过程如下：
 
 - 在执行`SELECT`语句时会<span style="color:red">又会单独生成</span>一个`ReadView`，该`ReadView`的`m_ids`列表的内容就是`[200]`（`事务id`为`100`的那个事务已经提交了，所以再次生成快照时就没有它了），`min_trx_id`为`200`，`max_trx_id`为`201`，`creator_trx_id`为`0`。
@@ -395,37 +374,34 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'张飞'
 
 比方说现在系统里有两个`事务id`分别为`100`、`200`的事务在执行：
 
-```
+```sql
 # Transaction 100
 BEGIN;
 
 UPDATE hero SET name = '关羽' WHERE number = 1;
 
 UPDATE hero SET name = '张飞' WHERE number = 1;
-```
-
-```
+```sql
+```sql
 # Transaction 200
 BEGIN;
 
 # 更新了一些别的表的记录
 ...
-```
-
+```sql
 此刻，表`hero`中`number`为`1`的记录得到的版本链表如下所示：
 
 ![][24-10]
 
 假设现在有一个使用`REPEATABLE READ`隔离级别的事务开始执行：
 
-```
+```sql
 # 使用REPEATABLE READ隔离级别的事务
 BEGIN;
 
 # SELECT1：Transaction 100、200未提交
 SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
-```
-
+```sql
 这个`SELECT1`的执行过程如下：
 
 - 在执行`SELECT`语句时会先生成一个`ReadView`，`ReadView`的`m_ids`列表的内容就是`[100, 200]`，`min_trx_id`为`100`，`max_trx_id`为`201`，`creator_trx_id`为`0`。
@@ -435,7 +411,7 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
 
 之后，我们把`事务id`为`100`的事务提交一下，就像这样：
 
-```
+```sql
 # Transaction 100
 BEGIN;
 
@@ -444,11 +420,10 @@ UPDATE hero SET name = '关羽' WHERE number = 1;
 UPDATE hero SET name = '张飞' WHERE number = 1;
 
 COMMIT;
-```
-
+```sql
 然后再到`事务id`为`200`的事务中更新一下表`hero`中`number`为`1`的记录：
 
-```
+```sql
 # Transaction 200
 BEGIN;
 
@@ -458,15 +433,14 @@ BEGIN;
 UPDATE hero SET name = '赵云' WHERE number = 1;
 
 UPDATE hero SET name = '诸葛亮' WHERE number = 1;
-```
-
+```sql
 此刻，表`hero`中`number`为`1`的记录的版本链就长这样：
 
 ![][24-11]
 
 然后再到刚才使用`REPEATABLE READ`隔离级别的事务中继续查找这个`number`为`1`的记录，如下：
 
-```
+```sql
 # 使用REPEATABLE READ隔离级别的事务
 BEGIN;
 
@@ -475,8 +449,7 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
 
 # SELECT2：Transaction 100提交，Transaction 200未提交
 SELECT * FROM hero WHERE number = 1; # 得到的列name的值仍为'刘备'
-```
-
+```sql
 这个`SELECT2`的执行过程如下：
 
 - 因为当前事务的隔离级别为`REPEATABLE READ`，而之前在执行`SELECT1`时已经生成过`ReadView`了，所以此时直接复用之前的`ReadView`，之前的`ReadView`的`m_ids`列表的内容就是`[100, 200]`，`min_trx_id`为`100`，`max_trx_id`为`201`，`creator_trx_id`为`0`。
@@ -491,10 +464,9 @@ SELECT * FROM hero WHERE number = 1; # 得到的列name的值仍为'刘备'
 
 从上面的描述中我们可以看出来，所谓的`MVCC`（Multi-Version Concurrency Control ，多版本并发控制）指的就是在使用`READ COMMITTD`、`REPEATABLE READ`这两种隔离级别的事务在执行普通的`SEELCT`操作时访问记录的版本链的过程，这样子可以使不同事务的`读-写`、`写-读`操作并发执行，从而提升系统性能。`READ COMMITTD`、`REPEATABLE READ`这两个隔离级别的一个很大不同就是：<span style="color:red">生成 ReadView 的时机不同，READ COMMITTD 在每一次进行普通 SELECT 操作前都会生成一个 ReadView，而 REPEATABLE READ 只在第一次进行普通 SELECT 操作前生成一个 ReadView，之后的查询操作都重复使用这个 ReadView 就好了</span>。
 
-```
+```sql
 小贴士：我们之前说执行DELETE语句或者更新主键的UPDATE语句并不会立即把对应的记录完全从页面中删除，而是执行一个所谓的delete mark操作，相当于只是对记录打上了一个删除标志位，这主要就是为MVCC服务的，大家可以对比上面举的例子自己试想一下怎么使用。另外，所谓的MVCC只是在我们进行普通的SEELCT查询时才生效，截止到目前我们所见的所有SELECT语句都算是普通的查询，至于什么是个不普通的查询，我们稍后再说～
-```
-
+```sql
 ## 关于 purge
 
 大家有没有发现两件事儿：

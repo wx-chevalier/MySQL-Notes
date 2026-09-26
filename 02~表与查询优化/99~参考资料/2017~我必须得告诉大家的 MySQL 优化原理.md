@@ -60,8 +60,7 @@ mysql> show status like 'last_query_cost';
 +-----------------+-------------+
 | Last_query_cost | 6391.799000 |
 +-----------------+-------------+
-```
-
+```sql
 示例中的结果表示优化器认为大概需要做 6391 个数据页的随机查找才能完成上面的查询。这个结果是根据一些列的统计信息计算得来的，这些统计信息包括：每张表或者索引的页面个数、索引的基数、索引和数据行的长度、索引的分布情况等等。有非常多的原因会导致 MySQL 选择错误的执行计划，比如统计信息不准确、不会考虑不受其控制的操作成本（用户自定义函数、存储过程）、MySQL 认为的最优跟我们想的不一样（我们希望执行时间尽可能短，但 MySQL 值选择它认为成本小的，但成本小并不意味着执行时间短）等等。
 
 MySQL 的查询优化器是一个非常复杂的部件，它使用了非常多的优化策略来生成一个最优的执行计划：
@@ -171,8 +170,7 @@ CREATE TABLE People(
     gender enum(`m`,`f`) not null,t
     key(last_name,first_name,dob)
 );
-```
-
+```sql
 对于表中每一行数据，索引中包含了 last_name、first_name、dob 列的值，下图展示了索引是如何组织数据存储的。
 
 ![索引查询](https://ngte-superbed.oss-cn-beijing.aliyuncs.com/item/20230402181144.png)
@@ -183,8 +181,7 @@ CREATE TABLE People(
 
 ```sql
 select * from where id + 1 = 5
-```
-
+```sql
 我们很容易看出其等价于 id = 4，但是 MySQL 无法自动解析这个表达式，使用函数是同样的道理。
 
 **2、前缀索引**
@@ -197,16 +194,14 @@ select * from where id + 1 = 5
 
 ```sql
 select film_id,actor_id from film_actor where actor_id = 1 or film_id = 1
-```
-
+```sql
 老版本的 MySQL 会随机选择一个索引，但新版本做如下的优化：
 
 ```sql
 select film_id,actor_id from film_actor where actor_id = 1
 union all
 select film_id,actor_id from film_actor where film_id = 1 and actor_id <> 1
-```
-
+```sql
 当出现多个索引做相交操作时（多个 AND 条件），通常来说一个包含所有相关列的索引要优于多个独立索引。
 
 - 当出现多个索引做联合操作时（多个 OR 条件），对结果集的合并、排序等操作需要耗费大量的 CPU 和内存资源，特别是当其中的某些索引的选择性不高，需要返回合并大量数据时，查询成本更高。所以这种情况下还不如走全表扫描。
@@ -218,22 +213,19 @@ select film_id,actor_id from film_actor where film_id = 1 and actor_id <> 1
 
 ```sql
 SELECT * FROM payment where staff_id = 2 and customer_id = 584
-```
-
+```sql
 是应该创建(staff_id,customer_id)的索引还是应该颠倒一下顺序？执行下面的查询，哪个字段的选择性更接近 1 就把哪个字段索引前面就好。
 
 ```sql
 select count(distinct staff_id)/count(*) as staff_id_selectivity,
        count(distinct customer_id)/count(*) as customer_id_selectivity,
        count(*) from payment
-```
-
+```sql
 多数情况下使用这个原则没有任何问题，但仍然注意你的数据中是否存在一些特殊情况。举个简单的例子，比如要查询某个用户组下有过交易的用户信息：
 
 ```sql
 select user_id from trade where user_group_id = 1 and trade_amount > 0
-```
-
+```sql
 MySQL 为这个查询选择了索引(user_group_id,trade_amount)，如果不考虑特殊情况，这看起来没有任何问题，但实际情况是这张表的大多数数据都是从老系统中迁移过来的，由于新老系统的数据不兼容，所以就给老系统迁移过来的数据赋予了一个默认的用户组。这种情况下，通过索引扫描的行数跟全表扫描基本没什么区别，索引也就起不到任何作用。推广开来说，经验法则和推论在多数情况下是有用的，可以指导我们开发和设计，但实际情况往往会更复杂，实际业务场景下的某些特殊情况可能会摧毁你的整个设计。
 
 **4、避免多个范围条件**
@@ -242,8 +234,7 @@ MySQL 为这个查询选择了索引(user_group_id,trade_amount)，如果不考�
 
 ```sql
 select user.* from user where login_time > '2017-04-01' and age between 18 and 30;
-```
-
+```sql
 这个查询有一个问题：它有两个范围条件，login_time 列和 age 列，MySQL 可以使用 login_time 列的索引或者 age 列的索引，但无法同时使用它们。
 
 **5、覆盖索引**
@@ -262,8 +253,7 @@ MySQL 有两种方式可以生产有序的结果集，其一是对结果集进�
 ```sql
 -- 最左列为常数，索引：(date,staff_id,customer_id)
 select  staff_id,customer_id from demo where date = '2015-06-01' order by staff_id,customer_id
-```
-
+```sql
 **7、冗余和重复索引**
 
 冗余索引是指在相同的列上按照相同的顺序创建的相同类型的索引，应当尽量避免这种索引，发现后立即删除。比如有一个索引(A,B)，再创建索引(A)就是冗余索引。冗余索引经常发生在为表添加新索引时，比如有人新建了索引(A,B)，但这个索引不是扩展已有的索引(A)。大多数情况下都应该尽量扩展已有的索引而不是创建新索引。但有极少情况下出现性能方面的考虑需要冗余索引，比如扩展已有索引而导致其变得过大，从而影响到其他使用该索引的查询。
@@ -294,8 +284,7 @@ COUNT()可能是被大家误解最多的函数了，它有两种不同的作用�
 SELECT A.xx,B.yy
 FROM A INNER JOIN B USING(c)
 WHERE A.xx IN (5,6)
-```
-
+```sql
 假设 MySQL 按照查询中的关联顺序 A、B 来进行关联操作，那么可以用下面的伪代码表示 MySQL 如何完成这个查询：
 
 ```sql
@@ -310,8 +299,7 @@ while(outer_row) {
     }
     outer_row = outer_iterator.next;
 }
-```
-
+```sql
 可以看到，最外层的查询是根据 A.xx 列来查询的，A.c 上如果有索引的话，整个关联查询也不会使用。再看内层的查询，很明显 B.c 上如果有索引的话，能够加速查询，因此只需要在关联顺序中的第二张表的相应列上创建索引即可。
 
 #### 优化 LIMIT 分页
@@ -322,8 +310,7 @@ while(outer_row) {
 
 ```sql
 SELECT film_id,description FROM film ORDER BY title LIMIT 50,5;
-```
-
+```sql
 如果这张表非常大，那么这个查询最好改成下面的样子：
 
 ```sql
@@ -331,8 +318,7 @@ SELECT film.film_id,film.description
 FROM film INNER JOIN (
     SELECT film_id FROM film ORDER BY title LIMIT 50,5
 ) AS tmp USING(film_id);
-```
-
+```sql
 这里的延迟关联将大大提升查询效率，让 MySQL 扫描尽可能少的页面，获取需要访问的记录后在根据关联列回原表查询所需要的列。有时候如果可以使用书签记录上次取数据的位置，那么下次就可以直接从该书签记录的位置开始扫描，这样就可以避免使用 OFFSET，比如下面的查询：
 
 ```sql
@@ -340,8 +326,7 @@ SELECT id FROM t LIMIT 10000, 10;
 -- 改为：
 SELECT id FROM t WHERE id > 10000 LIMIT 10;
 
-```
-
+```sql
 其他优化的办法还包括使用预先计算的汇总表，或者关联到一个冗余表，冗余表中只包含主键列和需要做排序的列。
 
 #### 优化 UNION
@@ -373,8 +358,7 @@ CREATE TABLE sales {
     PARTITION p_2017 VALUES LESS THAN (2017)
     PARTITION p_catchall VALUES LESS THAN MAXVALUE
 )
-```
-
+```sql
 分区子句中可以使用各种函数，但表达式的返回值必须是一个确定的整数，且不能是一个常数。MySQL 还支持一些其他分区，比如键值、哈希、列表分区，但在生产环境中很少见到。在 MySQL5.5 以后可以使用 RANGE COLUMNS 类型分区，这样即使是基于时间分区，也无需再将其转化成一个整数。
 
 接下来简单看下分区表上的各种操作逻辑：
@@ -429,28 +413,24 @@ CREATE TABLE sales {
 CREATE VIEW unpay_order AS
 SELECT * FROM sales WHERE status = 'new'
 WITH CHECK OPTION;   // 其作用下文会讲
-```
-
+```sql
 现要从未支付订单中查询购买者为 csc 的订单，可以使用如下查询：
 
 ```sql
 -- 查询购买者为csc且未支付的订单
 SELECT order_id,order_amount,buyer FROM unpay_order WHERE buyer = 'csc';
-```
-
+```sql
 使用临时表来模拟视图：
 
 ```sql
 CREATE TEMPORARY TABLE tmp_order_unpay AS SELECT * FROM sales WHERE status = 'new';
 SELECT order_id,order_amount,buyer FROM tmp_order_unpay WHERE buyer = 'csc';
-```
-
+```sql
 使用合并算法将视图定义的 SQL 合并进查询 SQL 后的样子：
 
 ```sql
 SELECT order_id,order_amount,buyer FROM sales WHERE status = 'new' AND buyer = 'csc';
-```
-
+```sql
 MySQL 可以嵌套定义视图，即在一个视图上在定义另一个视图，可以在 EXPLAN EXTENDED 之后使用 SHOW WARNINGS 来查看使用视图的查询重写后的结果。如果采用临时表算法实现的视图，EXPLAIN 中会显示为派生表（DERIVED），注意 EXPLAIN 时需要实际执行并产生临时表，所以有可能会很慢。明显地，临时表上没有任何索引，而且优化器也很难优化临时表上的查询，因此，如有可能，尽量使用合并算法会有更好的性能。那么问题来了：合并算法（类似于直接查询）有更好的性能，为什么还要使用视图？
 
 首先视图可以简化应用上层的操作，让应用更专注于其所关心的数据。其次，视图能够对敏感数据提供安全保护，比如：对不同的用户定义不同的视图，可以使敏感数据不出现在不应该看到这些数据的用户视图上；也可以使用视图实现基于列的权限控制，而不需要真正的在数据库中创建列权限。再者，视图可以方便系统运维，比如：在重构 schema 的时候使用视图，使得在修改视图底层表结构的时候，应用代码还可以继续运行不报错。
@@ -461,8 +441,7 @@ MySQL 可以嵌套定义视图，即在一个视图上在定义另一个视图�
 // 视图的作用是统计每日支出金额，DATE('2017-06-15 12:00:23') = 2017-06-15
 CREATE VIEW cost_per_day AS
 SELECT DATE(create_time) AS date,SUM(cost) AS cost FROM costs GROUP BY date;
-```
-
+```sql
 现要统计每日的收入与支出，有类似于上面的收入表，可以使用如下 SQL：
 
 ```sql
@@ -470,8 +449,7 @@ SELECT c.date,c.cost,s.amount
 FROM cost_per_day AS c
 JOIN sale_per_day AS s USING(date)
 WHERE date BETWEEN '2017-06-01' AND '2017-06-30'
-```
-
+```sql
 这个查询中，MySQL 先执行视图的 SQL，生成临时表，然后再将 sale_per_day 表和临时表进行关联。这里 WHERE 字句中的 BETWEEN 条件并不能下推到视图中，因而视图在创建时，会将所有的数据放到临时表中，而不是一个月数据，并且这个临时表也不会有索引。
 
 当然这个示例中的临时表数据不会太大，毕竟日期的数量不会太多，但仍然要考虑生成临时表的性能（如果 costs 表数据过大，GROUP BY 有可能会比较慢）。而且本示例中索引也不是问题，通过上一篇我们知道，如果 MySQL 将临时表作为关联顺序中的第一张表，仍然可以使用 sale_per_day 中的索引。但如果是对两个视图做关联的话，优化器就没有任何索引可以使用，这时就需要严格测试应用的性能是否满足需求。
@@ -521,8 +499,7 @@ WHERE date BETWEEN '2017-06-01' AND '2017-06-30'
 
 ```sql
 SELECT order_no, order_amount FROM sales WHERE order_status = ? and buyer = ?
-```
-
+```sql
 为什么要使用绑定变量？总所周知的原因是可以预先编译，减少 SQL 注入的风险，除了这些呢？
 
 当创建一个绑定变量 SQL 时，客户端向服务器发送了一个 SQL 语句原型，服务器收到这个 SQL 语句的框架后，解析并存储这个 SQL 语句的部分执行计划，返回给客户端一个 SQL 语句处理句柄，从此以后，客户端通过向服务器发送各个问号的取值和这个句柄来执行一个具体查询，这样就可以更高效地执行大量重复语句，因为：
@@ -572,8 +549,7 @@ where  customer_id =1;
 +------------------------------------------+
 | [1,"MARY","SMITH","2006-02-15 04:57:20"] |
 +------------------------------------------+
-```
-
+```sql
 # 字符集
 
 关于字符集大多数人的第一印象可能就是：数据库字符集尽量使用 UTF8，因为 UTF8 字符集是目前最适合于实现多种不同字符集之间的转换的字符集，可以最大程度上避免乱码问题，也可以方便以后的数据迁移。But why？
@@ -604,8 +580,7 @@ CREATE TABLE sales (
     order_amount INT NOT NULL DEFAULT 0,
     ......
 ) ENGINE=InnoDB COLLATE=utf8_general_cs;
-```
-
+```sql
 因此，在项目中直接使用 UTF8 字符集是完全没有问题的，但需要记住的是不要在一个数据库中使用多个不同的字符集，不同字符集之间的不兼容问题很难缠。有时候，看起来一切正常，但是当某个特殊字符出现时，一切操作都会出错，而且你很难发现错误的原因。
 
 ## 字符集对数据库的性能有影响吗？
@@ -616,8 +591,7 @@ CREATE TABLE sales (
 
 ```sql
 SELECT order_no,order_amount FROM sales ORDER BY buyer;
-```
-
+```sql
 只有当 SQL 查询中排序要求的字符集与服务器数据的字符集相同时，才能使用索引进行排序。你可能会说，这不是废话吗？其实不然，MySQL 是可以单独指定排序时使用的校对规则的，比如：
 
 ```sql
@@ -625,8 +599,7 @@ SELECT order_no,order_amount FROM sales ORDER BY buyer;
 // 这时候就不能使用索引排序呢，只能使用文件排序
 SELECT order_no,order_amount FROM sales ORDER BY buyer COLLATE utf8_bin;
 
-```
-
+```sql
 当使用两个字符集不同的列来关联两张表时，MySQL 会尝试转换其中一个列的字符集。这和在数据列外面封装一个函数一样，会让 MySQL 无法使用这个列上的索引。关于 MySQL 字符集还有一些坑，但在实际应用场景中遇到的字符集问题，其实不是特别的多，所以就此打住。
 
 # MySQL 配置
@@ -643,8 +616,7 @@ root@msc3:~# which mysqld
 root@msc3:~# /usr/sbin/mysqld --verbose --help |grep -A 1 'Default options'
 Default options are read from the following files in the given order:
 /etc/my.cnf /etc/mysql/my.cnf ~/.my.cnf
-```
-
+```sql
 一个典型的配置文件包含多个部分，每个部分的开头是一个方括号括起来的分段名称。MySQL 程序通常读取跟它同名的分段部分，比如，许多客户端程序读取 client 部分。服务器通常读取 mysqld 这一段，一定要确认配置项放在了文件正确的分段中，否则配置是不会生效的。MySQL 每一个配置项均使用小写，单词之间用下划线或者横线隔开，虽然我们常用的分隔符是下划线，但如果在命令行或者配置文件中见到如下配置，你要知道，它们其实是等价的：
 
 ```yaml
@@ -654,8 +626,7 @@ max-connections=5000
 # 命令行
 /usr/sbin/mysqld --max_connections=5000
 /usr/sbin/mysqld --max-connections=5000
-```
-
+```sql
 配置项可以有多个作用域：全局作用域、会话作用域(每个连接作用不同)、对象作用域。很多会话级配置项跟全局配置相等，可以认为是默认值，如果改变会话级配置项，它只影响改动的当前连接，当连接关闭时，所有的参数变更都会失效。下面有几个示例配置项：
 
 - query-cache-size 全局配置项
@@ -682,8 +653,7 @@ set            sort-buffer-size  = <value>
 SET GLOBAL sort-buffer-size = 100, SESSION sort-buffer-size = 1000;
 SET GLOBAL max-connections = 1000, sort-buffer-size = 1000000;
 
-```
-
+```sql
 动态的设置变量，MySQL 关闭时这些变量都会失效。如果在服务器运行时修改了变量的全局值，这个值对当前会话和其他任何已经存在的会话都不起效果，这是因为会话的变量值是在连接创建时从全局值初始化而来的。注意，在配置修改后，需要确认是否修改成功。你可能注意到，上面的示例中，有些使用“=”，有些使用“:=”。对于 set 命令本身来说，两种赋值运算符没有任何区别，在命令行中使用任一运算符符，均可以生效。而在其他语句中，赋值运算符必须是“:=”，因为在非 set 语句中“=”被视为比较运算符。具体可以参考如下示例：
 
 ```sh
@@ -696,8 +666,7 @@ select * from USER where GROUP = @group;
 SET @user := 123456;
 SELECT @group := `group` FROM user WHERE user = @user;
 SELECT * FROM user WHERE `group` = @group;
-```
-
+```sql
 有一些配置使用了不同的单位，比如 table-cache 变量指定表可以被缓存的数量，而不是表可以被缓存的字节数。而 key-buffer-size 则是以字节为单位。还有一些配置可以指定后缀单位，比如 `1M=1024*1024` 字节，但需要注意的是，这只能在配置文件或者作为命令行参数时有效。当使用 SQL 的 SET 命令时，必须使用数字值 1048576 或者 `1024*1024` 这样的表达式，但在配置文件中不能使用表达式。
 
 ## 小心翼翼的配置 MySQL
@@ -720,8 +689,7 @@ SET @@seession.sort-buffer-size := <value>
 -- 执行查询的sql
 SET @@seession.sort-buffer-size := DEFAULT #恢复默认值
 # 可以将类似的代码封装在函数中方便使用。
-```
-
+```sql
 ### 好习惯 3：配置变量时，并不是值越大越好
 
 配置变量时，并不是值越大越好，而且如果设置的值太高，可能更容易导致内存问题。在修改完成后，应该通过监控来确认变量的修改对服务器整体性能的影响。
@@ -790,8 +758,7 @@ innodb-log-file-size           = 256M
 innodb-flush-log-at-trx-commit = 1
 innodb-file-per-table          = 1
 innodb-buffer-pool-size        = 12G
-```
-
+```sql
 ### 分段
 
 MySQL 配置文件的格式为集中式，通常会分成好几部分，可以为多个程序提供配置，如[client]、[mysqld]、[mysql]等等。MySQL 程序通常是读取与它同名的分段部分。
@@ -851,16 +818,14 @@ root@dev-msc3:# du -sch `find /var/lib/mysql -name "*.MYI"`
 4.0K       /var/lib/mysql/mysql/procs_priv.MYI
 4.0K       /var/lib/mysql/mysql/ndb_binlog_index.MYI
 164K       total
-```
-
+```sql
 你可能会问，刚创建好的数据库，根本就没什么数据，索引文件大小为 0，那如何配置键缓存大小？这时候只能根据经验值：不超过为操作系统缓存保留内存的 25% ~ 50%。设置一个基本值，等运行一段时间后，根据运行情况来调整键缓存大小。总结来说，索引大小与 OS 缓存的 25%~50%两者间取小者。当然还可以计算键缓存的使用情况，如果一段时间后还是没有使用完所有的键缓存，就可以把缓冲区调小一点，计算缓存区的使用率可以通过以下公式：
 
 ```sql
 // key_blocks_unused的值可以通过 SHOW STATUS获取
 // key_cache_block_size的值可以通过 SHOW VARIABLES获取
 (key_blocks_unused * key_cache_block_size) / key_buffer_size
-```
-
+```sql
 键缓存块大小是一个比较重要的值，因为它影响 MyISAM、OS 缓存以及文件系统之间的交互。如果缓存块太小，可能会碰到写时读取(OS 在写数据之前必须先从磁盘上读取一些数据)，关于写时读取的相关知识，大家可以自行查阅。
 
 关于缓存命中率，这里再说一点。缓存命中率有什么意义？其实这个数字没太大的作用。比如 99%和 99.9%之间看起来差距很小，但实际上代表了 10 倍的差距。缓存命中率的实际意义与应用也有很大关系，有些应用可以在命中率 99%下良好的工作，有些 I/O 密集型应用，可能需要 99.99%。所以从经验上来说，每秒未命中次数这个指标实际上会更有用一些。比如每秒 5 次未命中可能不会导致 IO 繁忙，但每秒 100 次缓存未命中则可能出现问题。
@@ -871,8 +836,7 @@ MyISAM 键缓存的每秒未命中次数可以通过如下命令监控：
 # 计算每隔10s缓存未命中次数的增量
 # 使用此命令时请带上用户和密码参数：mysqladmin -uroot -pxxx extended-status -r -i 10 | grep Key_reads
 $ mysqladmin extended-status -r -i 10 | grep Key_reads
-```
-
+```sql
 最后，即使没有使用任何 MyISAM 表，依然需要将 `key-buffer-size`设置为较小值，比如 32M，因为 MySQL 内部会使用 MyISAM 表，比如 GROUP BY 语句可能会创建 MyISAM 临时表。
 
 ### myisam-recover
@@ -969,8 +933,7 @@ InnoDB 应该是使用最广泛的存储引擎，最重要的配置选项是下�
 
 ```sql
 InnoDB缓冲池 = 服务器总内存 - OS预留 - 服务器上的其他应用占用内存 - MySQL自身需要的内存 - InnoDB日志文件占用内存 - 其它内存(MyISAM键缓存、查询缓存等)
-```
-
+```sql
 具体来看，至少需要为 OS 保留 1~2G 内存，如果机器内存大的话可以预留多一些，建议 2GB 和总内存的 5%为基准，以较大者为准，如果机器上还运行着一些内存密集型任务，比如，备份任务，那么可以为 OS 再预留多一些内存。不要为 OS 缓存增加任何内存，因为 OS 通常会利用所有剩下的内存来做文件缓存。
 
 一般来说，运行 MySQL 的服务器很少会运行其他应用程序，但如果有的话，请为这些应用程序预留足够多的内存。MySQL 自身运行还需要一些内存，但通常都不会太大。需要考虑 MySQL 每个连接需要的内存，虽然每个连接需要的内存都很少，但它还要求一个基本量的内存来执行任何给定的查询，而且查询过程中还需要为排序、GROUP BY 等操作分配临时表内存，因此需要为高峰期执行大量的查询预留足够的内存。这个内存有多大？只能在运行过程中监控。
@@ -1036,12 +999,10 @@ InnoDB 调用 `fsync()`和 `fdatasync()`函数来刷新数据和日志文件，�
 innodb-data-home-dir = /var/lib/mysql
 innodb-data-file-path = ibdata1:1G;ibdata2:1G;ibdata3:1G
 
-```
-
+```sql
 这里在 3 个文件中创建了 3G 表空间，为了允许表空间在超过了分配的空间时还能增长，可以像这样配置最后一个文件自动扩展
 
 ```sql
 innodb-data-file-path =ibdata1:1G;ibdata2:1G;ibdata3:1G:autoextend
-```
-
+```sql
 innodb-file-per-table 选项让 InnoDB 为每张表使用一个文件，这使得在删除一张表时回收空间容易很多，而且特别容易管理，并且可以通过查看文件大小来确定表大小，所以这里建议打开这个配置。

@@ -16,7 +16,7 @@ MySQL 服务器程序在启动时会到文件系统的某个目录下加载一�
 
 那说了半天，到底`MySQL`把数据都存到哪个路径下呢？其实`数据目录`对应着一个系统变量`datadir`，我们在使用客户端与服务器建立连接之后查看这个系统变量的值就可以了：
 
-```
+```sql
 mysql> SHOW VARIABLES LIKE 'datadir';
 +---------------+-----------------------+
 | Variable_name | Value                 |
@@ -24,8 +24,7 @@ mysql> SHOW VARIABLES LIKE 'datadir';
 | datadir       | /usr/local/var/mysql/ |
 +---------------+-----------------------+
 1 row in set (0.00 sec)
-```
-
+```sql
 从结果中可以看出，<span style="color:red">在我的计算机上</span>`MySQL`的数据目录就是`/usr/local/var/mysql/`，你用你的计算机试试呗～
 
 ## 数据目录的结构
@@ -42,7 +41,7 @@ mysql> SHOW VARIABLES LIKE 'datadir';
 
 比方说我们查看一下<span style="color:red">在我的计算机上</span>当前有哪些数据库：
 
-```
+```sql
 mysql> SHOW DATABASES;
 +--------------------+
 | Database           |
@@ -56,11 +55,10 @@ mysql> SHOW DATABASES;
 | xiaohaizi          |
 +--------------------+
 7 rows in set (0.00 sec)
-```
-
+```sql
 可以看到在我的计算机上当前有 7 个数据库，其中`charset_demo_db`、`dahaizi`和`xiaohaizi`数据库是我们自定义的，其余 4 个数据库是属于 MySQL 自带的系统数据库。我们再看一下<span style="color:red">我的计算机上</span>的`数据目录`下的内容：
 
-```
+```sql
 .
 ├── auto.cnf
 ├── ca-key.pem
@@ -86,8 +84,7 @@ mysql> SHOW DATABASES;
 └── xiaohaizi
 
 6 directories, 16 files
-```
-
+```sql
 当然这个数据目录下的文件和子目录比较多，但是如果仔细看的话，除了`information_schema`这个系统数据库外，其他的数据库在`数据目录`下都有对应的子目录。这个`information_schema`比较特殊，设计 MySQL 的大佬们对它的实现进行了特殊对待，没有使用相应的数据库目录，我们忽略它的存在就好了。
 
 ### 表在文件系统中的表示
@@ -100,13 +97,12 @@ mysql> SHOW DATABASES;
 
 `表结构`就是该表的名称是什么，表里边有多少列，每个列的数据类型是什么，有什么约束条件和索引，用的是什么字符集和比较规则等等的各种信息，这些信息都体现在我们的建表语句中了。为了保存这些信息，`InnoDB`和`MyISAM`这两种存储引擎都在`数据目录`下对应的数据库子目录下创建了一个专门用于描述表结构的文件，文件名是这样：
 
-```
+```sql
 表名.frm
-```
-
+```sql
 比方说我们在`dahaizi`数据库下创建一个名为`test`的表：
 
-```
+```sql
 mysql> USE dahaizi;
 Database changed
 
@@ -114,8 +110,7 @@ mysql> CREATE TABLE test (
     ->     c1 INT
     -> );
 Query OK, 0 rows affected (0.03 sec)
-```
-
+```sql
 那在数据库`dahaizi`对应的子目录下就会创建一个名为`test.frm`的用于描述表结构的文件。值得注意的是，<span style="color:red">这个后缀名为.frm 是以二进制格式存储的，我们直接打开会是乱码的～</span> 你还不赶紧在你的计算机上创建个表试试～
 
 描述表结构的文件我们知道怎么存储了，那表中的数据存到什么文件中了呢？在这个问题上，不同的存储引擎就产生了分歧了，下面我们分别看一下`InnoDB`和`MyISAM`是用什么文件来保存表中数据的。
@@ -138,11 +133,10 @@ Query OK, 0 rows affected (0.03 sec)
 
 当然，如果你想让系统表空间对应文件系统上多个实际文件，或者仅仅觉得原来的`ibdata1`这个文件名难听，那可以在`MySQL`启动时配置对应的文件路径以及它们的大小，比如我们这样修改一下配置文件：
 
-```
+```sql
 [server]
 innodb_data_file_path=data1:512M;data2:512M:autoextend
-```
-
+```sql
 这样在`MySQL`启动之后就会创建这两个 512M 大小的文件作为`系统表空间`，其中的`autoextend`表明这两个文件如果不够用会自动扩展`data2`文件的大小。
 
 我们也可以把`系统表空间`对应的文件路径不配置到`数据目录`下，甚至可以配置到单独的磁盘分区上，涉及到的启动参数就是`innodb_data_file_path`和`innodb_data_home_dir`，具体的配置逻辑挺绕的，我们这就不多介绍了，知道改哪个参数可以修改`系统表空间`对应的文件，有需要的时候到官方文档里一查就好了。
@@ -153,42 +147,36 @@ innodb_data_file_path=data1:512M;data2:512M:autoextend
 
 在 MySQL5.6.6 以及之后的版本中，`InnoDB`并不会默认的把各个表的数据存储到系统表空间中，而是为每一个表建立一个独立表空间，也就是说我们创建了多少个表，就有多少个独立表空间。使用`独立表空间`来存储表数据的话，会在该表所属数据库对应的子目录下创建一个表示该`独立表空间`的文件，文件名和表名相同，只不过添加了一个`.ibd`的扩展名而已，所以完整的文件名称长这样：
 
-```
+```sql
 表名.ibd
-```
-
+```sql
 比方说假如我们使用了`独立表空间`去存储`xiaohaizi`数据库下的`test`表的话，那么在该表所在数据库对应的`xiaohaizi`目录下会为`test`表创建这两个文件：
 
-```
+```sql
 test.frm
 test.ibd
-```
-
+```sql
 其中`test.ibd`文件就用来存储`test`表中的数据和索引。当然我们也可以自己指定使用`系统表空间`还是`独立表空间`来存储数据，这个功能由启动参数`innodb_file_per_table`控制，比如说我们想刻意将表数据都存储到`系统表空间`时，可以在启动`MySQL`服务器的时候这样配置：
 
-```
+```sql
 [server]
 innodb_file_per_table=0
-```
-
+```sql
 当`innodb_file_per_table`的值为`0`时，代表使用系统表空间；当`innodb_file_per_table`的值为`1`时，代表使用独立表空间。不过`innodb_file_per_table`参数只对新建的表起作用，对于已经分配了表空间的表并不起作用。如果我们想把已经存在系统表空间中的表转移到独立表空间，可以使用下面的语法：
 
-```
+```sql
 ALTER TABLE 表名 TABLESPACE [=] innodb_file_per_table;
-```
-
+```sql
 或者把已经存在独立表空间的表转移到系统表空间，可以使用下面的语法：
 
-```
+```sql
 ALTER TABLE 表名 TABLESPACE [=] innodb_system;
-```
-
+```sql
 其中中括号扩起来的`=`可有可无，比方说我们想把`test`表从独立表空间移动到系统表空间，可以这么写：
 
-```
+```sql
 ALTER TABLE test TABLESPACE innodb_system;
-```
-
+```sql
 ##### 其他类型的表空间
 
 随着 MySQL 的发展，除了上述两种老牌表空间之外，现在还新提出了一些不同类型的表空间，比如通用表空间（general tablespace）、undo 表空间（undo tablespace）、临时表空间（temporary tablespace）等等的，具体情况我们就不细介绍了，等用到的时候再提。
@@ -197,12 +185,11 @@ ALTER TABLE test TABLESPACE innodb_system;
 
 好了，介绍完了`InnoDB`的系统表空间和独立表空间，现在轮到`MyISAM`了。我们知道不像`InnoDB`的索引和数据是一个东东，在`MyISAM`中的索引全部都是`二级索引`，该存储引擎的数据和索引是分开存放的。所以在文件系统中也是使用不同的文件来存储数据文件和索引文件。而且和`InnoDB`不同的是，`MyISAM`并没有什么所谓的`表空间`一说，<span style="color:red">表数据都存放到对应的数据库子目录下</span>。假如`test`表使用`MyISAM`存储引擎的话，那么在它所在数据库对应的`xiaohaizi`目录下会为`test`表创建这三个文件：
 
-```
+```sql
 test.frm
 test.MYD
 test.MYI
-```
-
+```sql
 其中`test.MYD`代表表的数据文件，也就是我们插入的用户记录；`test.MYI`代表表的索引文件，我们为该表创建的索引都会放到这个文件中。
 
 ### 视图在文件系统中的表示

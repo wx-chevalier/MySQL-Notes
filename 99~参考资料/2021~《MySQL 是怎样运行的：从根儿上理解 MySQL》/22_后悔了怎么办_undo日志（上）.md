@@ -47,10 +47,9 @@
 
 说了半天，`事务id`有什么子用？这个先保密，后边会一步步的详细介绍。现在只要知道只有在事务对表中的记录做改动时才会为这个事务分配一个唯一的`事务id`。
 
-```
+```sql
 小贴士：上面描述的事务id分配策略是针对MySQL 5.7来说的，前面的版本的分配方式可能不同～
-```
-
+```sql
 ### 事务 id 是怎么生成的
 
 这个`事务id`本质上就是一个数字，它的分配策略和我们前面提到的对隐藏列`row_id`（当用户没有为表创建主键和`UNIQUE`键时`InnoDB`自动创建的列）的分配策略大抵相同，具体策略如下：
@@ -75,7 +74,7 @@
 
 这些`undo日志`是被记录到类型为`FIL_PAGE_UNDO_LOG`（对应的十六进制是`0x0002`，忘记了页面类型是什么的同学需要回过头再看看前面的章节）的页面中。这些页面可以从系统表空间中分配，也可以从一种专门存放`undo日志`的表空间，也就是所谓的`undo tablespace`中分配。不过关于如何分配存储`undo日志`的页面这个事情我们稍后再说，现在先来看看不同操作都会产生什么样子的`undo日志`吧～ 为了故事的顺利发展，我们先来创建一个名为`undo_demo`的表：
 
-```
+```sql
 CREATE TABLE undo_demo (
     id INT NOT NULL,
     key1 VARCHAR(100),
@@ -83,11 +82,10 @@ CREATE TABLE undo_demo (
     PRIMARY KEY (id),
     KEY idx_key1 (key1)
 )Engine=InnoDB CHARSET=utf8;
-```
-
+```sql
 这个表中有 3 个列，其中`id`列是主键，我们为`key1`列建立了一个二级索引，`col`列是一个普通的列。我们前面介绍`InnoDB`的数据字典时说过，每个表都会被分配一个唯一的`table id`，我们可以通过系统数据库`information_schema`中的`innodb_sys_tables`表来查看某个表对应的`table id`是什么，现在我们查看一下`undo_demo`对应的`table id`是多少：
 
-```
+```sql
 mysql> SELECT * FROM information_schema.innodb_sys_tables WHERE name = 'xiaohaizi/undo_demo';
 +----------+---------------------+------+--------+-------+-------------+------------+---------------+------------+
 | TABLE_ID | NAME                | FLAG | N_COLS | SPACE | FILE_FORMAT | ROW_FORMAT | ZIP_PAGE_SIZE | SPACE_TYPE |
@@ -95,8 +93,7 @@ mysql> SELECT * FROM information_schema.innodb_sys_tables WHERE name = 'xiaohaiz
 |      138 | xiaohaizi/undo_demo |   33 |      6 |   482 | Barracuda   | Dynamic    |             0 | Single     |
 +----------+---------------------+------+--------+-------+-------------+------------+---------------+------------+
 1 row in set (0.01 sec)
-```
-
+```sql
 从查询结果可以看出，`undo_demo`表对应的`table id`为`138`，先把这个值记住，我们后边有用。
 
 ### INSERT 操作对应的 undo 日志
@@ -110,20 +107,18 @@ mysql> SELECT * FROM information_schema.innodb_sys_tables WHERE name = 'xiaohaiz
 - `undo no`在一个事务中是从`0`开始递增的，也就是说只要事务没提交，每生成一条`undo日志`，那么该条日志的`undo no`就增 1。
 - 如果记录中的主键只包含一个列，那么在类型为`TRX_UNDO_INSERT_REC`的`undo日志`中只需要把该列占用的存储空间大小和真实值记录下来，如果记录中的主键包含多个列，那么每个列占用的存储空间大小和对应的真实值都需要记录下来（图中的`len`就代表列占用的存储空间大小，`value`就代表列的真实值）。
 
-```
+```sql
 小贴士：当我们向某个表中插入一条记录时，实际上需要向聚簇索引和所有的二级索引都插入一条记录。不过记录undo日志时，我们只需要考虑向聚簇索引插入记录时的情况就好了，因为其实聚簇索引记录和二级索引记录是一一对应的，我们在回滚插入操作时，只需要知道这条记录的主键信息，然后根据主键信息做对应的删除操作，做删除操作时就会顺带着把所有二级索引中相应的记录也删除掉。后边说到的DELETE操作和UPDATE操作对应的undo日志也都是针对聚簇索引记录而言的，我们之后就不强调了。
-```
-
+```sql
 现在我们向`undo_demo`中插入两条记录：
 
-```
+```sql
 BEGIN;  # 显式开启一个事务，假设该事务的id为100
 
 # 插入两条记录
 INSERT INTO undo_demo(id, key1, col)
     VALUES (1, 'AWM', '狙击枪'), (2, 'M416', '步枪');
-```
-
+```sql
 因为记录的主键只包含一个`id`列，所以我们在对应的`undo日志`中只需要将待插入记录的`id`列占用的存储空间长度（`id`列的类型为`INT`，`INT`类型占用的存储空间长度为`4`个字节）和真实值记录下来。本例中插入了两条记录，所以会产生两条类型为`TRX_UNDO_INSERT_REC`的`undo日志`:
 
 - 第一条`undo日志`的`undo no`为`0`，记录主键占用的存储空间长度为`4`，真实值为`1`。画一个示意图就是这样：
@@ -134,10 +129,9 @@ INSERT INTO undo_demo(id, key1, col)
 
   ![][22-04]
 
-```
+```sql
 小贴士：为了最大限度的节省undo日志占用的存储空间，和我们前面说过的redo日志类似，设计InnoDB的大佬会给undo日志中的某些属性进行压缩处理，具体的压缩细节我们就不介绍了。
-```
-
+```sql
 #### roll_pointer 隐藏列的含义
 
 是时候揭开`roll_pointer`的真实面纱了，这个占用`7`个字节的字段其实一点都不神秘，本质上就是一个指向记录对应的`undo日志`的一个指针。比方说我们上面向`undo_demo`表里插入了 2 条记录，每条记录都有与其对应的一条`undo日志`。记录被存储到了类型为`FIL_PAGE_INDEX`的页面中（就是我们前面一直所说的`数据页`），`undo日志`被存放到了类型为`FIL_PAGE_UNDO_LOG`的页面中。效果如图所示：
@@ -174,10 +168,9 @@ INSERT INTO undo_demo(id, key1, col)
 
   对照着图我们还要注意一点，将被删除记录加入到`垃圾链表`时，实际上加入到链表的头节点处，会跟着修改`PAGE_FREE`属性的值。
 
-```
+```sql
 小贴士：页面的Page Header部分有一个PAGE_GARBAGE属性，该属性记录着当前页面中可重用存储空间占用的总字节数。每当有已删除记录被加入到垃圾链表后，都会把这个PAGE_GARBAGE属性的值加上该已删除记录占用的存储空间大小。PAGE_FREE指向垃圾链表的头节点，之后每当新插入记录时，首先判断PAGE_FREE指向的头节点代表的已删除记录占用的存储空间是否足够容纳这条新插入的记录，如果不可以容纳，就直接向页面中申请新的空间来存储这条记录（是的，你没看错，并不会尝试遍历整个垃圾链表，找到一个可以容纳新记录的节点）。如果可以容纳，那么直接重用这条已删除记录的存储空间，并且把PAGE_FREE指向垃圾链表中的下一条已删除记录。但是这里有一个问题，如果新插入的那条记录占用的存储空间大小小于垃圾链表的头节点占用的存储空间大小，那就意味头节点对应的记录占用的存储空间里有一部分空间用不到，这部分空间就被称之为碎片空间。那这些碎片空间岂不是永远都用不到了么？其实也不是，这些碎片空间占用的存储空间大小会被统计到PAGE_GARBAGE属性中，这些碎片空间在整个页面快使用完前并不会被重新利用，不过当页面快满时，如果再插入一条记录，此时页面中并不能分配一条完整记录的空间，这时候会首先看一看PAGE_GARBAGE的空间和剩余可利用的空间加起来是不是可以容纳下这条记录，如果可以的话，InnoDB会尝试重新组织页内的记录，重新组织的过程就是先开辟一个临时页面，把页面内的记录依次插入一遍，因为依次插入时并不会产生碎片，之后再把临时页面的内容复制到本页面，这样就可以把那些碎片空间都解放出来（很显然重新组织页面内的记录比较耗费性能）。
-```
-
+```sql
 从上面的描述中我们也可以看出来，在删除语句所在的事务提交之前，只会经历`阶段一`，也就是`delete mark`阶段（提交之后我们就不用回滚了，所以只需考虑对删除操作的`阶段一`做的影响进行回滚）。设计`InnoDB`的大佬为此设计了一种称之为`TRX_UNDO_DEL_MARK_REC`类型的`undo日志`，它的完整结构如下图所示：
 
 ![][22-09]
@@ -194,7 +187,7 @@ INSERT INTO undo_demo(id, key1, col)
 
 该介绍的我们介绍完了，现在继续在上面那个事务 id 为`100`的事务中删除一条记录，比如我们把`id`为 1 的那条记录删除掉：
 
-```
+```sql
 BEGIN;  # 显式开启一个事务，假设该事务的id为100
 
 # 插入两条记录
@@ -203,8 +196,7 @@ INSERT INTO undo_demo(id, key1, col)
 
 # 删除一条记录
 DELETE FROM undo_demo WHERE id = 1;
-```
-
+```sql
 这个`delete mark`操作对应的`undo日志`的结构就是这样：
 
 ![][22-11]
@@ -290,7 +282,7 @@ DELETE FROM undo_demo WHERE id = 1;
 
 现在继续在上面那个事务 id 为 100 的事务中更新一条记录，比如我们把 id 为 2 的那条记录更新一下：
 
-```
+```sql
 BEGIN;  # 显式开启一个事务，假设该事务的id为100
 
 # 插入两条记录
@@ -304,8 +296,7 @@ DELETE FROM undo_demo WHERE id = 1;
 UPDATE undo_demo
     SET key1 = 'M249', col = '机枪'
     WHERE id = 2;
-```
-
+```sql
 这个`UPDATE`语句更新的列大小都没有改动，所以可以采用`就地更新`的方式来执行，在真正改动页面记录时，会先记录一条类型为`TRX_UNDO_UPD_EXIST_REC`的`undo日志`，长这样：
 
 ![][22-16]
@@ -334,10 +325,9 @@ UPDATE undo_demo
 
 针对`UPDATE`语句更新记录主键值的这种情况，在对该记录进行`delete mark`操作前，会记录一条类型为`TRX_UNDO_DEL_MARK_REC`的`undo日志`；之后插入新记录时，会记录一条类型为`TRX_UNDO_INSERT_REC`的`undo日志`，也就是说每对一条记录的主键值做改动时，会记录 2 条`undo日志`。这些日志的格式我们上面都介绍过了，就不赘述了。
 
-```
+```sql
 小贴士：其实还有一种称为TRX_UNDO_UPD_DEL_REC的undo日志的类型我们没有介绍，主要是想避免引入过多的复杂度，如果大家对这种类型的undo日志的使用感兴趣的话，可以额外查一下别的资料。
-```
-
+```sql
 [22-01]: https://ngte-superbed.oss-cn-beijing.aliyuncs.com/book/mysql-learning-notes/22-01.png
 [22-02]: https://ngte-superbed.oss-cn-beijing.aliyuncs.com/book/mysql-learning-notes/22-02.png
 [22-03]: https://ngte-superbed.oss-cn-beijing.aliyuncs.com/book/mysql-learning-notes/22-03.png

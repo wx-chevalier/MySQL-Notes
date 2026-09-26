@@ -2,10 +2,9 @@
 
 大家别忘了`MySQL`本质上是一个软件，设计`MySQL`的大佬并不能要求使用这个软件的人个个都是数据库高高手，就像我写这本书的时候并不能要求各位在学之前就会了里边儿的知识。
 
-```
+```sql
 吐槽一下：都会了的人谁还看呢，难道是为了精神上受感化？
-```
-
+```sql
 也就是说我们无法避免某些同学写一些执行起来十分耗费性能的语句。即使是这样，设计`MySQL`的大佬还是依据一些规则，竭尽全力的把这个很糟糕的语句转换成某种可以比较高效执行的形式，这个过程也可以被称作`查询重写`（就是人家觉得你写的语句不好，自己再重写一遍）。本章详细介绍一下一些比较重要的重写规则。
 
 ## 条件化简
@@ -16,100 +15,85 @@
 
 有时候表达式里有许多无用的括号，比如这样：
 
-```
+```sql
 ((a = 5 AND b = c) OR ((a > c) AND (c < 5)))
-```
-
+```sql
 看着就很烦，优化器会把那些用不到的括号给干掉，就是这样：
 
-```
+```sql
 (a = 5 and b = c) OR (a > c AND c < 5)
-```
-
+```sql
 ### 常量传递（constant_propagation）
 
 有时候某个表达式是某个列和某个常量做等值匹配，比如这样：
 
-```
+```sql
 a = 5
-```
-
+```sql
 当这个表达式和其他涉及列`a`的表达式使用`AND`连接起来时，可以将其他表达式中的`a`的值替换为`5`，比如这样：
 
-```
+```sql
 a = 5 AND b > a
-```
-
+```sql
 就可以被转换为：
 
-```
+```sql
 a = 5 AND b > 5
-```
-
-```
+```sql
+```sql
 小贴士：为什么用OR连接起来的表达式就不能进行常量传递呢？自己想想～
-```
-
+```sql
 ### 等值传递（equality_propagation）
 
 有时候多个列之间存在等值匹配的关系，比如这样：
 
-```
+```sql
 a = b and b = c and c = 5
-```
-
+```sql
 这个表达式可以被简化为：
 
-```
+```sql
 a = 5 and b = 5 and c = 5
-```
-
+```sql
 ### 移除没用的条件（trivial_condition_removal）
 
 对于一些明显永远为`TRUE`或者`FALSE`的表达式，优化器会移除掉它们，比如这个表达式：
 
-```
+```sql
 (a < 1 and b = b) OR (a = 6 OR 5 != 5)
-```
-
+```sql
 很明显，`b = b`这个表达式永远为`TRUE`，`5 != 5`这个表达式永远为`FALSE`，所以简化后的表达式就是这样的：
 
-```
+```sql
 (a < 1 and TRUE) OR (a = 6 OR FALSE)
-```
-
+```sql
 可以继续被简化为：
 
-```
+```sql
 a < 1 OR a = 6
-```
-
+```sql
 ### 表达式计算
 
 在查询开始执行之前，如果表达式中只包含常量的话，它的值会被先计算出来，比如这个：
 
-```
+```sql
 a = 5 + 1
-```
-
+```sql
 因为`5 + 1`这个表达式只包含常量，所以就会被化简成：
 
-```
+```sql
 a = 6
-```
-
+```sql
 但是这里需要注意的是，如果某个列并不是以单独的形式作为表达式的操作数时，比如出现在函数中，出现在某个更复杂表达式中，就像这样：
 
-```
+```sql
 ABS(a) > 5
-```
-
+```sql
 或者：
 
-```
+```sql
 -a < -8
-```
-
+```sql
 <span style="color:red">优化器是不会尝试对这些表达式进行化简的</span>。我们前面说过只有搜索条件中索引列和常数使用某些运算符连接起来才可能使用到索引，所以如果可以的话，<span style="color:red">最好让索引列以单独的形式出现在表达式中</span>。
 
 ### HAVING 子句和 WHERE 子句的合并
@@ -130,24 +114,22 @@ ABS(a) > 5
 
 设计`MySQL`的大佬觉得这两种查询花费的时间特别少，少到可以忽略，所以也把通过这两种方式查询的表称之为`常量表`（英文名：`constant tables`）。优化器在分析一个查询语句时，先首先执行常量表查询，然后把查询中涉及到该表的条件全部替换成常数，最后再分析其余表的查询成本，比方说这个查询语句：
 
-```
+```sql
 SELECT * FROM table1 INNER JOIN table2
     ON table1.column1 = table2.column2
     WHERE table1.primary_key = 1;
-```
-
+```sql
 很明显，这个查询可以使用主键和常量值的等值匹配来查询`table1`表，也就是在这个查询中`table1`表相当于`常量表`，在分析对`table2`表的查询成本之前，就会执行对`table1`表的查询，并把查询中涉及`table1`表的条件都替换掉，也就是上面的语句会被转换成这样：
 
-```
+```sql
 SELECT table1表记录的各个字段的常量值, table2.* FROM table1 INNER JOIN table2
     ON table1表column1列的常量值 = table2.column2;
-```
-
+```sql
 ## 外连接消除
 
 我们前面说过，`内连接`的驱动表和被驱动表的位置可以相互转换，而`左（外）连接`和`右（外）连接`的驱动表和被驱动表是固定的。这就导致`内连接`可能通过优化表的连接顺序来降低整体的查询成本，而`外连接`却无法优化表的连接顺序。为了故事的顺利发展，我们还是把之前介绍连接原理时用过的`t1`和`t2`表请出来，为了防止大家早就忘掉了，我们再看一下这两个表的结构：
 
-```
+```sql
 CREATE TABLE t1 (
     m1 int,
     n1 char(1)
@@ -157,11 +139,10 @@ CREATE TABLE t2 (
     m2 int,
     n2 char(1)
 ) Engine=InnoDB, CHARSET=utf8;
-```
-
+```sql
 为了唤醒大家的记忆，我们再把这两个表中的数据给展示一下：
 
-```
+```sql
 mysql> SELECT * FROM t1;
 +------+------+
 | m1   | n1   |
@@ -181,11 +162,10 @@ mysql> SELECT * FROM t2;
 |    4 | d    |
 +------+------+
 3 rows in set (0.00 sec)
-```
-
+```sql
 我们之前说过，<span style="color:red">外连接和内连接的本质区别就是：对于外连接的驱动表的记录来说，如果无法在被驱动表中找到匹配 ON 子句中的过滤条件的记录，那么该记录仍然会被加入到结果集中，对应的被驱动表记录的各个字段使用 NULL 值填充；而内连接的驱动表的记录如果无法在被驱动表中找到匹配 ON 子句中的过滤条件的记录，那么该记录会被舍弃</span>。查询效果就是这样：
 
-```
+```sql
 mysql> SELECT * FROM t1 INNER JOIN t2 ON t1.m1 = t2.m2;
 +------+------+------+------+
 | m1   | n1   | m2   | n2   |
@@ -204,17 +184,15 @@ mysql> SELECT * FROM t1 LEFT JOIN t2 ON t1.m1 = t2.m2;
 |    1 | a    | NULL | NULL |
 +------+------+------+------+
 3 rows in set (0.00 sec)
-```
-
+```sql
 对于上面例子中的（左）外连接来说，由于驱动表`t1`中`m1=1, n1='a'`的记录无法在被驱动表`t2`中找到符合`ON`子句条件`t1.m1 = t2.m2`的记录，所以就直接把这条记录加入到结果集，对应的`t2`表的`m2`和`n2`列的值都设置为`NULL`。
 
-```
+```sql
 小贴士：右（外）连接和左（外）连接其实只在驱动表的选取方式上是不同的，其余方面都是一样的，所以优化器会首先把右（外）连接查询转换成左（外）连接查询。我们后边就不再介绍右（外）连接了。
-```
-
+```sql
 我们知道`WHERE`子句的杀伤力比较大，<span style="color:red">凡是不符合 WHERE 子句中条件的记录都不会参与连接</span>。只要我们在搜索条件中指定关于被驱动表相关列的值不为`NULL`，那么外连接中在被驱动表中找不到符合`ON`子句条件的驱动表记录也就被排除出最后的结果集了，也就是说：<span style="color:red">在这种情况下：外连接和内连接也就没有什么区别了</span>！比方说这个查询：
 
-```
+```sql
 mysql> SELECT * FROM t1 LEFT JOIN t2 ON t1.m1 = t2.m2 WHERE t2.n2 IS NOT NULL;
 +------+------+------+------+
 | m1   | n1   | m2   | n2   |
@@ -223,11 +201,10 @@ mysql> SELECT * FROM t1 LEFT JOIN t2 ON t1.m1 = t2.m2 WHERE t2.n2 IS NOT NULL;
 |    3 | c    |    3 | c    |
 +------+------+------+------+
 2 rows in set (0.01 sec)
-```
-
+```sql
 由于指定了被驱动表`t2`的`n2`列不允许为`NULL`，所以上面的`t1`和`t2`表的左（外）连接查询和内连接查询是一样一样的。当然，我们也可以不用显式的指定被驱动表的某个列`IS NOT NULL`，只要隐含的有这个意思就行了，比方说这样：
 
-```
+```sql
 mysql> SELECT * FROM t1 LEFT JOIN t2 ON t1.m1 = t2.m2 WHERE t2.m2 = 2;
 +------+------+------+------+
 | m1   | n1   | m2   | n2   |
@@ -235,11 +212,10 @@ mysql> SELECT * FROM t1 LEFT JOIN t2 ON t1.m1 = t2.m2 WHERE t2.m2 = 2;
 |    2 | b    |    2 | b    |
 +------+------+------+------+
 1 row in set (0.00 sec)
-```
-
+```sql
 在这个例子中，我们在`WHERE`子句中指定了被驱动表`t2`的`m2`列等于`2`，也就相当于间接的指定了`m2`列不为`NULL`值，所以上面的这个左（外）连接查询其实和下面这个内连接查询是等价的：
 
-```
+```sql
 mysql> SELECT * FROM t1 INNER JOIN t2 ON t1.m1 = t2.m2 WHERE t2.m2 = 2;
 +------+------+------+------+
 | m1   | n1   | m2   | n2   |
@@ -247,8 +223,7 @@ mysql> SELECT * FROM t1 INNER JOIN t2 ON t1.m1 = t2.m2 WHERE t2.m2 = 2;
 |    2 | b    |    2 | b    |
 +------+------+------+------+
 1 row in set (0.00 sec)
-```
-
+```sql
 我们把这种在外连接查询中，指定的`WHERE`子句中包含被驱动表中的列不为`NULL`值的条件称之为`空值拒绝`（英文名：`reject-NULL`）。<span style="color:red">在被驱动表的 WHERE 子句符合空值拒绝的条件后，外连接和内连接可以相互转换</span>。这种转换带来的好处就是<span style="color:red">查询优化器可以通过评估表的不同连接顺序的成本，选出成本最低的那种连接顺序来执行查询</span>。
 
 ## 子查询优化
@@ -385,10 +360,9 @@ mysql> SELECT * FROM t1 INNER JOIN t2 ON t1.m1 = t2.m2 WHERE t2.m2 = 2;
 
 你说写下面这样的子查询有什么意义：
 
-```
+```sql
 SELECT (SELECT m1 FROM t1 LIMIT 1);
-```
-
+```sql
 貌似没什么意义～ 我们平时用子查询最多的地方就是把它作为布尔表达式的一部分来作为搜索条件用在`WHERE`子句或者`ON`子句里。所以我们这里来总结一下子查询在布尔表达式中的使用场景。
 
 - 使用`=`、`>`、`<`、`>=`、`<=`、`<>`、`!=`、`<=>`作为布尔表达式的操作符
@@ -565,7 +539,7 @@ SELECT (SELECT m1 FROM t1 LIMIT 1);
 
 好了，关于子查询的基础语法我们用最快的速度温习了一遍，如果想了解更多语法细节，大家可以去查看一下`MySQL`的文档，现在我们就假设各位都懂了什么是个子查询了喔，接下来就要介绍具体某种类型的子查询在`MySQL`中是怎么执行的了，想想就有点儿小激动呢～ 当然，为了故事的顺利发展，我们的例子也需要跟随形势鸟枪换炮，还是要祭出我们用了 n 遍的`single_table`表：
 
-```
+```sql
 CREATE TABLE single_table (
     id INT NOT NULL AUTO_INCREMENT,
     key1 VARCHAR(100),
@@ -581,8 +555,7 @@ CREATE TABLE single_table (
     KEY idx_key3 (key3),
     KEY idx_key_part(key_part1, key_part2, key_part3)
 ) Engine=InnoDB CHARSET=utf8;
-```
-
+```sql
 为了方便，我们假设有两个表`s1`、`s2`与这个`single_table`表的构造是相同的，而且这两个表里边儿有 10000 条记录，除 id 列外其余的列都插入随机值。下面正式开始我们的表演。
 
 #### 小白们眼中子查询的执行方式
@@ -617,10 +590,9 @@ CREATE TABLE single_table (
 
 其实设计`MySQL`的大佬想了一系列的办法来优化子查询的执行，大部分情况下这些优化措施其实挺有效的，但是保不齐有的时候马失前蹄，下面我们详细介绍各种不同类型的子查询具体是怎么执行的。
 
-```
+```sql
 小贴士：我们下面即将介绍的关于MySQL优化子查询的执行方式的事儿都是基于MySQL5.7这个版本的，以后版本可能有更新的优化策略！
-```
-
+```sql
 #### 标量子查询、行子查询的执行方式
 
 我们经常在下面两个场景中使用到标量子查询或者行子查询：
@@ -631,11 +603,10 @@ CREATE TABLE single_table (
 
 对于上述两种场景中的<span style="color:red">不相关</span>标量子查询或者行子查询来说，它们的执行方式是简单的，比方说下面这个查询语句：
 
-```
+```sql
 SELECT * FROM s1
     WHERE key1 = (SELECT common_field FROM s2 WHERE key3 = 'a' LIMIT 1);
-```
-
+```sql
 它的执行方式和年少的我想的一样：
 
 - 先单独执行`(SELECT common_field FROM s2 WHERE key3 = 'a' LIMIT 1)`这个子查询。
@@ -645,11 +616,10 @@ SELECT * FROM s1
 
 对于<span style="color:red">相关</span>的标量子查询或者行子查询来说，比如下面这个查询：
 
-```
+```sql
 SELECT * FROM s1 WHERE
     key1 = (SELECT common_field FROM s2 WHERE s1.key3 = s2.key3 LIMIT 1);
-```
-
+```sql
 事情也和年少的我想的一样，它的执行方式就是这样的：
 
 - 先从外层查询中获取一条记录，本例中也就是先从`s1`表中获取一条记录。
@@ -665,11 +635,10 @@ SELECT * FROM s1 WHERE
 
 对于不相关的`IN`子查询，比如这样：
 
-```
+```sql
 SELECT * FROM s1
     WHERE key1 IN (SELECT common_field FROM s2 WHERE key3 = 'a');
-```
-
+```sql
 我们最开始的感觉就是这种不相关的`IN`子查询和不相关的标量子查询或者行子查询是一样一样的，都是把外层查询和子查询当作两个独立的单表查询来对待，可是很遗憾的是设计`MySQL`的大佬为了优化`IN`子查询倾注了太多心血（毕竟`IN`子查询是我们日常生活中最常用的子查询类型），所以整个执行过程并不像我们想象的那么简单(>\_<)。
 
 其实说句老实话，对于不相关的`IN`子查询来说，如果子查询的结果集中的记录条数很少，那么把子查询和外层查询分别看成两个单独的单表查询效率还是蛮高的，但是如果单独执行子查询后的结果集太多的话，就会导致这些问题：
@@ -720,11 +689,10 @@ SELECT * FROM s1
 
 事情到这就完了？我们还得重新审视一下最开始的那个查询语句：
 
-```
+```sql
 SELECT * FROM s1
     WHERE key1 IN (SELECT common_field FROM s2 WHERE key3 = 'a');
-```
-
+```sql
 当我们把子查询进行物化之后，假设子查询物化表的名称为`materialized_table`，该物化表存储的子查询结果集的列为`m_val`，那么这个查询其实可以从下面两种角度来看待：
 
 - 从表`s1`的角度来看待，整个查询的意思其实是：对于`s1`表中的每条记录来说，如果该记录的`key1`列的值在子查询对应的物化表中，则该记录会被加入最终的结果集。画个图表示一下就是这样：
@@ -737,10 +705,9 @@ SELECT * FROM s1
 
 也就是说其实上面的查询就相当于表`s1`和子查询物化表`materialized_table`进行内连接：
 
-```
+```sql
 SELECT s1.* FROM s1 INNER JOIN materialized_table ON key1 = m_val;
-```
-
+```sql
 转化成内连接之后就有意思了，查询优化器可以评估不同连接顺序需要的成本是多少，选取成本最低的那种查询方式执行查询。我们分析一下上述查询中使用外层查询的表`s1`和物化表`materialized_table`进行内连接的成本都是由哪几部分组成的：
 
 - 如果使用`s1`表作为驱动表的话，总查询成本由下面几个部分组成：
@@ -759,19 +726,17 @@ SELECT s1.* FROM s1 INNER JOIN materialized_table ON key1 = m_val;
 
 虽然将子查询进行物化之后再执行查询都会有建立临时表的成本，但是不管怎么说，我们见识到了将子查询转换为连接的强大作用，设计`MySQL`的大佬继续开脑洞：能不能不进行物化操作直接把子查询转换为连接呢？让我们重新审视一下上面的查询语句：
 
-```
+```sql
 SELECT * FROM s1
     WHERE key1 IN (SELECT common_field FROM s2 WHERE key3 = 'a');
-```
-
+```sql
 我们可以把这个查询理解成：对于`s1`表中的某条记录，如果我们能在`s2`表（准确的说是执行完`WHERE s2.key3 = 'a'`之后的结果集）中找到一条或多条记录，这些记录的`common_field`的值等于`s1`表记录的`key1`列的值，那么该条`s1`表的记录就会被加入到最终的结果集。这个过程其实和把`s1`和`s2`两个表连接起来的效果很像：
 
-```
+```sql
 SELECT s1.* FROM s1 INNER JOIN s2
     ON s1.key1 = s2.common_field
     WHERE s2.key3 = 'a';
-```
-
+```sql
 只不过我们不能保证对于`s1`表的某条记录来说，在`s2`表（准确的说是执行完`WHERE s2.key3 = 'a'`之后的结果集）中有多少条记录满足`s1.key1 = s2.common_field`这个条件，不过我们可以分三种情况讨论：
 
 - 情况一：对于`s1`表的某条记录来说，`s2`表中<span style="color:red">没有</span>任何记录满足`s1.key1 = s2.common_field`这个条件，那么该记录自然也不会加入到最后的结果集。
@@ -780,16 +745,14 @@ SELECT s1.* FROM s1 INNER JOIN s2
 
 对于`s1`表的某条记录来说，由于我们只关心`s2`表中<span style="color:red">是否存在</span>记录满足`s1.key1 = s2.common_field`这个条件，而<span style="color:red">不关心具体有多少条记录与之匹配</span>，又因为有`情况三`的存在，我们上面所说的`IN`子查询和两表连接之间并不完全等价。但是将子查询转换为连接又真的可以充分发挥优化器的作用，所以设计`MySQL`的大佬在这里提出了一个新概念 --- `半连接`（英文名：`semi-join`）。将`s1`表和`s2`表进行半连接的意思就是：<span style="color:red">对于`s1`表的某条记录来说，我们只关心在`s2`表中是否存在与之匹配的记录是否存在，而不关心具体有多少条记录与之匹配，最终的结果集中只保留`s1`表的记录</span>。为了让大家有更直观的感受，我们假设 MySQL 内部是这么改写上面的子查询的：
 
-```
+```sql
 SELECT s1.* FROM s1 SEMI JOIN s2
     ON s1.key1 = s2.common_field
     WHERE key3 = 'a';
-```
-
-```
+```sql
+```sql
 小贴士：semi-join只是在MySQL内部采用的一种执行子查询的方式，MySQL并没有提供面向用户的semi-join语法，所以我们不需要，也不能尝试把上面这个语句放到黑框框里运行，我只是想说明一下上面的子查询在MySQL内部会被转换为类似上面语句的半连接～
-```
-
+```sql
 概念是有了，怎么实现这种所谓的`半连接`呢？设计`MySQL`的大佬准备了好几种办法。
 
 - Table pullout （子查询中的表上拉）
@@ -849,37 +812,33 @@ SELECT s1.* FROM s1 SEMI JOIN s2
 
 对于某些使用`IN`语句的<span style="color:red">相关</span>子查询，比方这个查询：
 
-```
+```sql
 SELECT * FROM s1
     WHERE key1 IN (SELECT common_field FROM s2 WHERE s1.key3 = s2.key3);
-```
-
+```sql
 它也可以很方便的转为半连接，转换后的语句类似这样：
 
-```
+```sql
 SELECT s1.* FROM s1 SEMI JOIN s2
     ON s1.key1 = s2.common_field AND s1.key3 = s2.key3;
-```
-
+```sql
 然后就可以使用我们上面介绍过的`DuplicateWeedout`、`LooseScan`、`FirstMatch`等半连接执行策略来执行查询，当然，如果子查询的查询列表处只有主键或者唯一二级索引列，还可以直接使用`table pullout`的策略来执行查询，但是需要大家注意的是，<span style="color:red">由于相关子查询并不是一个独立的查询，所以不能转换为物化表来执行查询</span>。
 
 ##### semi-join 的适用条件
 
 当然，并不是所有包含`IN`子查询的查询语句都可以转换为`semi-join`，只有形如这样的查询才可以被转换为`semi-join`：
 
-```
+```sql
 SELECT ... FROM outer_tables
     WHERE expr IN (SELECT ... FROM inner_tables ...) AND ...
 
-```
-
+```sql
 或者这样的形式也可以：
 
-```
+```sql
 SELECT ... FROM outer_tables
     WHERE (oe1, oe2, ...) IN (SELECT ie1, ie2, ... FROM inner_tables ...) AND ...
-```
-
+```sql
 用文字总结一下，只有符合下面这些条件的子查询才可以被转换为`semi-join`：
 
 - 该子查询必须是和`IN`语句组成的布尔表达式，并且在外层查询的`WHERE`或者`ON`子句中出现。
@@ -1079,52 +1038,46 @@ SELECT ... FROM outer_tables
 
 如果`[NOT] EXISTS`子查询是不相关子查询，可以先执行子查询，得出该`[NOT] EXISTS`子查询的结果是`TRUE`还是`FALSE`，并重写原先的查询语句，比如对这个查询来说：
 
-```
+```sql
 SELECT * FROM s1
     WHERE EXISTS (SELECT 1 FROM s2 WHERE key1 = 'a')
         OR key2 > 100;
-```
-
+```sql
 因为这个语句里的子查询是不相关子查询，所以优化器会首先执行该子查询，假设该 EXISTS 子查询的结果为`TRUE`，那么接着优化器会重写查询为：
 
-```
+```sql
 SELECT * FROM s1
     WHERE TRUE OR key2 > 100;
-```
-
+```sql
 进一步简化后就变成了：
 
-```
+```sql
 SELECT * FROM s1
     WHERE TRUE;
-```
-
+```sql
 对于相关的`[NOT] EXISTS`子查询来说，比如这个查询：
 
-```
+```sql
 SELECT * FROM s1
     WHERE EXISTS (SELECT 1 FROM s2 WHERE s1.common_field = s2.common_field);
-```
-
+```sql
 很不幸，这个查询只能按照我们年少时的那种执行相关子查询的方式来执行。不过如果`[NOT] EXISTS`子查询中如果可以使用索引的话，那查询速度也会加快不少，比如：
 
-```
+```sql
 SELECT * FROM s1
     WHERE EXISTS (SELECT 1 FROM s2 WHERE s1.common_field = s2.key1);
-```
-
+```sql
 上面这个`EXISTS`子查询中可以使用`idx_key1`来加快查询速度。
 
 #### 对于派生表的优化
 
 我们前面说过把子查询放在外层查询的`FROM`子句后，那么这个子查询的结果相当于一个`派生表`，比如下面这个查询：
 
-```
+```sql
 SELECT * FROM  (
         SELECT id AS d_id,  key3 AS d_key3 FROM s2 WHERE key1 = 'a'
     ) AS derived_s1 WHERE d_key3 = 'a';
-```
-
+```sql
 子查询`( SELECT id AS d_id,  key3 AS d_key3 FROM s2 WHERE key1 = 'a')`的结果就相当于一个派生表，这个表的名称是`derived_s1`，该表有两个列，分别是`d_id`和`d_key3`。
 
 对于含有`派生表`的查询，`MySQL`提供了两种执行策略：

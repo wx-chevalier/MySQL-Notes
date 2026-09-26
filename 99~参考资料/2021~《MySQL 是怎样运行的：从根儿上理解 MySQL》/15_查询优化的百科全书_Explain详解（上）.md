@@ -4,7 +4,7 @@
 
 如果我们想看看某个查询的执行计划的话，可以在具体的查询语句前面加一个`EXPLAIN`，就像这样：
 
-```
+```sql
 mysql> EXPLAIN SELECT 1;
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------+
 | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra          |
@@ -12,8 +12,7 @@ mysql> EXPLAIN SELECT 1;
 |  1 | SIMPLE      | NULL  | NULL       | NULL | NULL          | NULL | NULL    | NULL | NULL |     NULL | No tables used |
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------+
 1 row in set, 1 warning (0.01 sec)
-```
-
+```sql
 然后这输出的一大坨东西就是所谓的`执行计划`，我的任务就是带领大家看懂这一大坨东西里边的每个列都是干什么用的，以及在这个`执行计划`的辅助下，我们应该怎样改进自己的查询语句以使查询执行起来更高效。其实除了以`SELECT`开头的查询语句，其余的`DELETE`、`INSERT`、`REPLACE`以及`UPDATE `语句前面都可以加上`EXPLAIN`这个词儿，用来查看这些语句的执行计划，不过我们这里对`SELECT`语句更感兴趣，所以后边只会以`SELECT`语句为例来描述`EXPLAIN`语句的用法。为了让大家先有一个感性的认识，我们把`EXPLAIN`语句输出的各个列的作用先大致罗列一下：
 
 |      列名       | 描述                                                       |
@@ -33,7 +32,7 @@ mysql> EXPLAIN SELECT 1;
 
 需要注意的是，<span style="color:red">大家如果看不懂上面输出列含义，那是正常的，千万不要纠结～</span>。我在这里把它们都列出来只是为了描述一个轮廓，让大家有一个大致的印象，下面会细细道来，等会儿说完了不信你不会～ 为了故事的顺利发展，我们还是要请出我们前面已经用了 n 遍的`single_table`表，为了防止大家忘了，再把它的结构描述一遍：
 
-```
+```sql
 CREATE TABLE single_table (
     id INT NOT NULL AUTO_INCREMENT,
     key1 VARCHAR(100),
@@ -49,8 +48,7 @@ CREATE TABLE single_table (
     KEY idx_key3 (key3),
     KEY idx_key_part(key_part1, key_part2, key_part3)
 ) Engine=InnoDB CHARSET=utf8;
-```
-
+```sql
 我们仍然假设有两个和`single_table`表构造一模一样的`s1`、`s2`表，而且这两个表里边儿有 10000 条记录，除 id 列外其余的列都插入随机值。为了让大家有比较好的阅读体验，我们下面并不准备严格按照`EXPLAIN`输出列的顺序来介绍这些列分别是干嘛的，大家注意一下就好了。
 
 ## 执行计划输出中各列详解
@@ -59,7 +57,7 @@ CREATE TABLE single_table (
 
 不论我们的查询语句有多复杂，里边儿包含了多少个表，到最后也是需要对每个表进行单表访问的，所以设计`MySQL`的大佬规定<span style="color:red">EXPLAIN 语句输出的每条记录都对应着某个单表的访问方法，该条记录的 table 列代表着该表的表名</span>。所以我们看一条比较简单的查询语句：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1;
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
@@ -67,13 +65,12 @@ mysql> EXPLAIN SELECT * FROM s1;
 |  1 | SIMPLE      | s1    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 9688 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 这个查询语句只涉及对`s1`表的单表查询，所以`EXPLAIN`输出中只有一条记录，其中的`table`列的值是`s1`，表明这条记录是用来说明对`s1`表的单表访问方法的。
 
 下面我们看一下一个连接查询的执行计划：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2;
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
 | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                 |
@@ -82,26 +79,23 @@ mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2;
 |  1 | SIMPLE      | s2    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 9954 |   100.00 | Using join buffer (Block Nested Loop) |
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
 2 rows in set, 1 warning (0.01 sec)
-```
-
+```sql
 可以看到这个连接查询的执行计划中有两条记录，这两条记录的`table`列分别是`s1`和`s2`，这两条记录用来分别说明对`s1`表和`s2`表的访问方法是什么。
 
 ### id
 
 我们知道我们写的查询语句一般都以`SELECT`关键字开头，比较简单的查询语句里只有一个`SELECT`关键字，比如下面这个查询语句：
 
-```
+```sql
 SELECT * FROM s1 WHERE key1 = 'a';
-```
-
+```sql
 稍微复杂一点的连接查询中也只有一个`SELECT`关键字，比如：
 
-```
+```sql
 SELECT * FROM s1 INNER JOIN s2
     ON s1.key1 = s2.key1
     WHERE s1.common_field = 'a';
-```
-
+```sql
 但是下面两种情况下在一条查询语句中会出现多个`SELECT`关键字：
 
 - 查询中包含子查询的情况
@@ -123,7 +117,7 @@ SELECT * FROM s1 INNER JOIN s2
 
 查询语句中每出现一个`SELECT`关键字，设计`MySQL`的大佬就会为它分配一个唯一的`id`值。这个`id`值就是`EXPLAIN`语句的第一个列，比如下面这个查询中只有一个`SELECT`关键字，所以`EXPLAIN`的结果中也就只有一条`id`列为`1`的记录：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref   | rows | filtered | Extra |
@@ -131,11 +125,10 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1      | idx_key1 | 303     | const |    8 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.03 sec)
-```
-
+```sql
 对于连接查询来说，一个`SELECT`关键字后边的`FROM`子句中可以跟随多个表，所以在连接查询的执行计划中，<span style="color:red">每个表都会对应一条记录，但是这些记录的 id 值都是相同的</span>，比如：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2;
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
 | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                 |
@@ -144,13 +137,12 @@ mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2;
 |  1 | SIMPLE      | s2    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 9954 |   100.00 | Using join buffer (Block Nested Loop) |
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
 2 rows in set, 1 warning (0.01 sec)
-```
-
+```sql
 可以看到，上述连接查询中参与连接的`s1`和`s2`表分别对应一条记录，但是这两条记录对应的`id`值都是`1`。这里需要大家记住的是，<span style="color:red">在连接查询的执行计划中，每个表都会对应一条记录，这些记录的 id 列的值是相同的，出现在前面的表表示驱动表，出现在后边的表表示被驱动表</span>。所以从上面的`EXPLAIN`输出中我们可以看出，查询优化器准备让`s1`表作为驱动表，让`s2`表作为被驱动表来执行查询。
 
 对于包含子查询的查询语句来说，就可能涉及多个`SELECT`关键字，所以在包含子查询的查询语句的执行计划中，每个`SELECT`关键字都会对应一个唯一的`id`值，比如这样：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 IN (SELECT key1 FROM s2) OR key3 = 'a';
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+-------------+
 | id | select_type | table | partitions | type  | possible_keys | key      | key_len | ref  | rows | filtered | Extra       |
@@ -159,13 +151,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 IN (SELECT key1 FROM s2) OR key3 = 'a
 |  2 | SUBQUERY    | s2    | NULL       | index | idx_key1      | idx_key1 | 303     | NULL | 9954 |   100.00 | Using index |
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+-------------+
 2 rows in set, 1 warning (0.02 sec)
-```
-
+```sql
 从输出结果中我们可以看到，`s1`表在外层查询中，外层查询有一个独立的`SELECT`关键字，所以第一条记录的`id`值就是`1`，`s2`表在子查询中，子查询有一个独立的`SELECT`关键字，所以第二条记录的`id`值就是`2`。
 
 但是这里大家需要特别注意，<span style="color:red">查询优化器可能对涉及子查询的查询语句进行重写，从而转换为连接查询</span>。所以如果我们想知道查询优化器对某个包含子查询的语句是否进行了重写，直接查看执行计划就好了，比如说：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 IN (SELECT key3 FROM s2 WHERE common_field = 'a');
 +----+-------------+-------+------------+------+---------------+----------+---------+-------------------+------+----------+------------------------------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref               | rows | filtered | Extra                        |
@@ -174,13 +165,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 IN (SELECT key3 FROM s2 WHERE common_
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1      | idx_key1 | 303     | xiaohaizi.s2.key3 |    1 |   100.00 | End temporary                |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------------------+------+----------+------------------------------+
 2 rows in set, 1 warning (0.00 sec)
-```
-
+```sql
 可以看到，虽然我们的查询语句是一个子查询，但是执行计划中`s1`和`s2`表对应的记录的`id`值全部是`1`，这就表明了<span style="color:red">查询优化器将子查询转换为了连接查询</span>。
 
 对于包含`UNION`子句的查询语句来说，每个`SELECT`关键字对应一个`id`值也是没错的，不过还是有点儿特别的东西，比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1  UNION SELECT * FROM s2;
 +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 | id | select_type  | table      | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
@@ -190,13 +180,12 @@ mysql> EXPLAIN SELECT * FROM s1  UNION SELECT * FROM s2;
 | NULL | UNION RESULT | <union1,2> | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | Using temporary |
 +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 3 rows in set, 1 warning (0.00 sec)
-```
-
+```sql
 这个语句的执行计划的第三条记录是个什么鬼？为毛`id`值是`NULL`，而且`table`列长的也怪怪的？大家别忘了`UNION`子句是干嘛用的，它会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢？`MySQL`使用的是内部的临时表。正如上面的查询计划中所示，`UNION`子句是为了把`id`为`1`的查询和`id`为`2`的查询的结果集合并起来并去重，所以在内部创建了一个名为`<union1, 2>`的临时表（就是执行计划第三条记录的`table`列的名称），`id`为`NULL`表明这个临时表是为了合并两个查询的结果集而创建的。
 
 跟`UNION`对比起来，`UNION ALL`就不需要为最终的结果集进行去重，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表。所以在包含`UNION ALL`子句的查询的执行计划中，就没有那个`id`为`NULL`的记录，如下所示：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1  UNION ALL SELECT * FROM s2;
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
@@ -205,8 +194,7 @@ mysql> EXPLAIN SELECT * FROM s1  UNION ALL SELECT * FROM s2;
 |  2 | UNION       | s2    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 9954 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 2 rows in set, 1 warning (0.01 sec)
-```
-
+```sql
 ### select_type
 
 通过上面的内容我们知道，一条大的查询语句里边可以包含若干个`SELECT`关键字，每个`SELECT`关键字代表着一个小的查询语句，而每个`SELECT`关键字的`FROM`子句中都可以包含若干张表（这些表用来做连接查询），每一张表都对应着执行计划输出中的一条记录，对于在同一个`SELECT`关键字中的表来说，它们的`id`值是相同的。
@@ -383,7 +371,7 @@ mysql> EXPLAIN SELECT * FROM s1  UNION ALL SELECT * FROM s2;
 
 我们前面说过执行计划的一条记录就代表着`MySQL`对某个表的执行查询时的访问方法，其中的`type`列就表明了这个访问方法是什么，比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref   | rows | filtered | Extra |
@@ -391,8 +379,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1      | idx_key1 | 303     | const |    8 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.04 sec)
-```
-
+```sql
 可以看到`type`列的值是`ref`，表明`MySQL`即将使用`ref`访问方法来执行对`s1`表的查询。但是我们之前只介绍过对使用`InnoDB`存储引擎的表进行单表访问的一些访问方法，完整的访问方法如下：`system`，`const`，`eq_ref`，`ref`，`fulltext`，`ref_or_null`，`index_merge`，`unique_subquery`，`index_subquery`，`range`，`index`，`ALL`。当然我们还要详细介绍一下：
 
 - `system`
@@ -593,7 +580,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 
 在`EXPLAIN`语句输出的执行计划中，`possible_keys`列表示在某个查询语句中，对某个表执行单表查询时可能用到的索引有哪些，`key`列表示实际用到的索引有哪些，比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z' AND key3 = 'a';
 +----+-------------+-------+------------+------+-------------------+----------+---------+-------+------+----------+-------------+
 | id | select_type | table | partitions | type | possible_keys     | key      | key_len | ref   | rows | filtered | Extra       |
@@ -601,13 +588,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z' AND key3 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1,idx_key3 | idx_key3 | 303     | const |    6 |     2.75 | Using where |
 +----+-------------+-------+------------+------+-------------------+----------+---------+-------+------+----------+-------------+
 1 row in set, 1 warning (0.01 sec)
-```
-
+```sql
 上述执行计划的`possible_keys`列的值是`idx_key1,idx_key3`，表示该查询可能使用到`idx_key1,idx_key3`两个索引，然后`key`列的值是`idx_key3`，表示经过查询优化器计算使用不同索引的成本后，最后决定使用`idx_key3`来执行查询比较划算。
 
 不过有一点比较特别，就是在使用`index`访问方法来查询某个表时，`possible_keys`列是空的，而`key`列展示的是实际使用到的索引，比如这样：
 
-```
+```sql
 mysql> EXPLAIN SELECT key_part2 FROM s1 WHERE key_part3 = 'a';
 +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+--------------------------+
 | id | select_type | table | partitions | type  | possible_keys | key          | key_len | ref  | rows | filtered | Extra                    |
@@ -615,8 +601,7 @@ mysql> EXPLAIN SELECT key_part2 FROM s1 WHERE key_part3 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | index | NULL          | idx_key_part | 909     | NULL | 9688 |    10.00 | Using where; Using index |
 +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+--------------------------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 另外需要注意的一点是，<span style="color:red">possible_keys 列中的值并不是越多越好，可能使用的索引越多，查询优化器计算查询成本时就得花费更长时间，所以如果可以的话，尽量删除那些用不到的索引</span>。
 
 ### key_len
@@ -629,7 +614,7 @@ mysql> EXPLAIN SELECT key_part2 FROM s1 WHERE key_part3 = 'a';
 
 比如下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE id = 5;
 +----+-------------+-------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type  | possible_keys | key     | key_len | ref   | rows | filtered | Extra |
@@ -637,11 +622,10 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE id = 5;
 |  1 | SIMPLE      | s1    | NULL       | const | PRIMARY       | PRIMARY | 4       | const |    1 |   100.00 | NULL  |
 +----+-------------+-------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.01 sec)
-```
-
+```sql
 由于`id`列的类型是`INT`，并且不可以存储`NULL`值，所以在使用该列的索引时`key_len`大小就是`4`。当索引列可以存储`NULL`值时，比如：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key2 = 5;
 +----+-------------+-------+------------+-------+---------------+----------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type  | possible_keys | key      | key_len | ref   | rows | filtered | Extra |
@@ -649,13 +633,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key2 = 5;
 |  1 | SIMPLE      | s1    | NULL       | const | idx_key2      | idx_key2 | 5       | const |    1 |   100.00 | NULL  |
 +----+-------------+-------+------------+-------+---------------+----------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 可以看到`key_len`列就变成了`5`，比使用`id`列的索引时多了`1`。
 
 对于可变长度的索引列来说，比如下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref   | rows | filtered | Extra |
@@ -663,13 +646,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1      | idx_key1 | 303     | const |    8 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 由于`key1`列的类型是`VARCHAR(100)`，所以该列实际最多占用的存储空间就是`300`字节，又因为该列允许存储`NULL`值，所以`key_len`需要加`1`，又因为该列是可变长度列，所以`key_len`需要加`2`，所以最后`ken_len`的值就是`303`。
 
 有的同学可能有疑问：你在前面介绍`InnoDB`行格式的时候不是说，存储变长字段的实际长度不是可能占用 1 个字节或者 2 个字节么？为什么现在不管三七二十一都用了`2`个字节？这里需要强调的一点是，执行计划的生成是在`MySQL server`层中的功能，并不是针对具体某个存储引擎的功能，设计`MySQL`的大佬在执行计划中输出`key_len`列主要是为了让我们区分某个使用联合索引的查询具体用了几个索引列，而不是为了准确的说明针对某个具体存储引擎存储变长字段的实际长度占用的空间到底是占用 1 个字节还是 2 个字节。比方说下面这个使用到联合索引`idx_key_part`的查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key_part1 = 'a';
 +----+-------------+-------+------------+------+---------------+--------------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key          | key_len | ref   | rows | filtered | Extra |
@@ -677,11 +659,10 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key_part1 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key_part  | idx_key_part | 303     | const |   12 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+--------------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 我们可以从执行计划的`key_len`列中看到值是`303`，这意味着`MySQL`在执行上述查询中只能用到`idx_key_part`索引的一个索引列，而下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key_part1 = 'a' AND key_part2 = 'b';
 +----+-------------+-------+------------+------+---------------+--------------+---------+-------------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key          | key_len | ref         | rows | filtered | Extra |
@@ -689,15 +670,14 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key_part1 = 'a' AND key_part2 = 'b';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key_part  | idx_key_part | 606     | const,const |    1 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+--------------+---------+-------------+------+----------+-------+
 1 row in set, 1 warning (0.01 sec)
-```
-
+```sql
 这个查询的执行计划的`ken_len`列的值是`606`，说明执行这个查询的时候可以用到联合索引`idx_key_part`的两个索引列。
 
 ### ref
 
 当使用索引列等值匹配的条件去执行查询时，也就是在访问方法是`const`、`eq_ref`、`ref`、`ref_or_null`、`unique_subquery`、`index_subquery`其中之一时，`ref`列展示的就是与索引列作等值匹配的东东是什么，比如只是一个常数或者是某个列。大家看下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref   | rows | filtered | Extra |
@@ -705,11 +685,10 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 = 'a';
 |  1 | SIMPLE      | s1    | NULL       | ref  | idx_key1      | idx_key1 | 303     | const |    8 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------+------+----------+-------+
 1 row in set, 1 warning (0.01 sec)
-```
-
+```sql
 可以看到`ref`列的值是`const`，表明在使用`idx_key1`索引执行查询时，与`key1`列作等值匹配的对象是一个常数，当然有时候更复杂一点：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.id = s2.id;
 +----+-------------+-------+------------+--------+---------------+---------+---------+-----------------+------+----------+-------+
 | id | select_type | table | partitions | type   | possible_keys | key     | key_len | ref             | rows | filtered | Extra |
@@ -718,13 +697,12 @@ mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.id = s2.id;
 |  1 | SIMPLE      | s2    | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | xiaohaizi.s1.id |    1 |   100.00 | NULL  |
 +----+-------------+-------+------------+--------+---------------+---------+---------+-----------------+------+----------+-------+
 2 rows in set, 1 warning (0.00 sec)
-```
-
+```sql
 可以看到对被驱动表`s2`的访问方法是`eq_ref`，而对应的`ref`列的值是`xiaohaizi.s1.id`，这说明在对被驱动表进行访问时会用到`PRIMARY`索引，也就是聚簇索引与一个列进行等值匹配的条件，于`s2`表的`id`作等值匹配的对象就是`xiaohaizi.s1.id`列（注意这里把数据库名也写出来了）。
 
 有的时候与索引列进行等值匹配的对象是一个函数，比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s2.key1 = UPPER(s1.key1);
 +----+-------------+-------+------------+------+---------------+----------+---------+------+------+----------+-----------------------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref  | rows | filtered | Extra                 |
@@ -733,15 +711,14 @@ mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s2.key1 = UPPER(s1.key1);
 |  1 | SIMPLE      | s2    | NULL       | ref  | idx_key1      | idx_key1 | 303     | func |    1 |   100.00 | Using index condition |
 +----+-------------+-------+------------+------+---------------+----------+---------+------+------+----------+-----------------------+
 2 rows in set, 1 warning (0.00 sec)
-```
-
+```sql
 我们看执行计划的第二条记录，可以看到对`s2`表采用`ref`访问方法执行查询，然后在查询计划的`ref`列里输出的是`func`，说明与`s2`表的`key1`列进行等值匹配的对象是一个函数。
 
 ### rows
 
 如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的`rows`列就代表预计需要扫描的行数，如果使用索引来执行查询时，执行计划的`rows`列就代表预计扫描的索引记录行数。比如下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z';
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+-----------------------+
 | id | select_type | table | partitions | type  | possible_keys | key      | key_len | ref  | rows | filtered | Extra                 |
@@ -749,8 +726,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z';
 |  1 | SIMPLE      | s1    | NULL       | range | idx_key1      | idx_key1 | 303     | NULL |  266 |   100.00 | Using index condition |
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+-----------------------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 我们看到执行计划的`rows`列的值是`266`，这意味着查询优化器在经过分析使用`idx_key1`进行查询的成本之后，觉得满足`key1 > 'z'`这个条件的记录只有`266`条。
 
 ### filtered
@@ -762,7 +738,7 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z';
 
 比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z' AND common_field = 'a';
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+------------------------------------+
 | id | select_type | table | partitions | type  | possible_keys | key      | key_len | ref  | rows | filtered | Extra                              |
@@ -770,13 +746,12 @@ mysql> EXPLAIN SELECT * FROM s1 WHERE key1 > 'z' AND common_field = 'a';
 |  1 | SIMPLE      | s1    | NULL       | range | idx_key1      | idx_key1 | 303     | NULL |  266 |    10.00 | Using index condition; Using where |
 +----+-------------+-------+------------+-------+---------------+----------+---------+------+------+----------+------------------------------------+
 1 row in set, 1 warning (0.00 sec)
-```
-
+```sql
 从执行计划的`key`列中可以看出来，该查询使用`idx_key1`索引来执行查询，从`rows`列可以看出满足`key1 > 'z'`的记录有`266`条。执行计划的`filtered`列就代表查询优化器预测在这`266`条记录中，有多少条记录满足其余的搜索条件，也就是`common_field = 'a'`这个条件的百分比。此处`filtered`列的值是`10.00`，说明查询优化器预测在`266`条记录中有`10.00%`的记录满足`common_field = 'a'`这个条件。
 
 对于单表查询来说，这个`filtered`列的值没什么意义，我们更关注在连接查询中驱动表对应的执行计划记录的`filtered`值，比方说下面这个查询：
 
-```
+```sql
 mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.key1 = s2.key1 WHERE s1.common_field = 'a';
 +----+-------------+-------+------------+------+---------------+----------+---------+-------------------+------+----------+-------------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref               | rows | filtered | Extra       |
@@ -785,8 +760,7 @@ mysql> EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.key1 = s2.key1 WHERE s1.comm
 |  1 | SIMPLE      | s2    | NULL       | ref  | idx_key1      | idx_key1 | 303     | xiaohaizi.s1.key1 |    1 |   100.00 | NULL        |
 +----+-------------+-------+------------+------+---------------+----------+---------+-------------------+------+----------+-------------+
 2 rows in set, 1 warning (0.00 sec)
-```
-
+```sql
 从执行计划中可以看出来，查询优化器打算把`s1`当作驱动表，`s2`当作被驱动表。我们可以看到驱动表`s1`表的执行计划的`rows`列为`9688`，`filtered`列为`10.00`，这意味着驱动表`s1`的扇出值就是`9688 × 10.00% = 968.8`，这说明还要对被驱动表执行大约`968`次查询。
 
 <div STYLE="page-break-after: always;"></div>

@@ -44,10 +44,9 @@
 
 总共的`redo`日志文件大小其实就是：`innodb_log_file_size × innodb_log_files_in_group`。
 
-```
+```sql
 小贴士：如果采用循环使用的方式向redo日志文件组里写数据的话，那岂不是要追尾，也就是后写入的redo日志覆盖掉前面写的redo日志？当然可能了！所以设计InnoDB的大佬提出了checkpoint的概念，稍后我们重点介绍～
-```
-
+```sql
 ### redo 日志文件格式
 
 我们前面说过`log buffer`本质上是一片连续的内存空间，被划分成了若干个`512`字节大小的`block`。<span style="color:red">将 log buffer 中的 redo 日志刷新到磁盘的本质就是把 block 的镜像写入日志文件中</span>，所以`redo`日志文件其实也是由若干个`512`字节大小的 block 组成。
@@ -63,7 +62,7 @@
 
 普通 block 的格式我们在介绍`log buffer`的时候都说过了，就是`log block header`、`log block body`、`log block trialer`这三个部分，就不重复介绍了。这里需要介绍一下每个`redo`日志文件前 2048 个字节，也就是前 4 个特殊 block 的格式都是干嘛的，废话少说，先看图：
 
-![][21-03]  
+![][21-03]
 从图中可以看出来，这 4 个 block 分别是：
 
 - `log file header`：描述该`redo`日志文件的一些整体属性，看一下它的结构：
@@ -128,10 +127,9 @@
 
   我们假设上图中`mtr_2`产生的`redo`日志量为 1000 字节，为了将`mtr_2`产生的`redo`日志写入`log buffer`，我们不得不额外多分配两个 block，所以`lsn`的值需要在`8916`的基础上增加`1000 + 12×2 + 4 × 2 = 1032`。
 
-```
+```sql
 小贴士：为什么初始的lsn值为8704呢？我也不太清楚，人家就这么规定的。其实你也可以规定你一生下来算1岁，只要保证随着时间的流逝，你的年龄不断增长就好了。
-```
-
+```sql
 从上面的描述中可以看出来，<span style="color:red">每一组由 mtr 生成的 redo 日志都有一个唯一的 LSN 值与其对应，LSN 值越小，说明 redo 日志产生的越早</span>。
 
 ### flushed_to_disk_lsn
@@ -157,10 +155,9 @@
 
 综上所述，当有新的`redo`日志写入到`log buffer`时，首先`lsn`的值会增长，但`flushed_to_disk_lsn`不变，随后随着不断有`log buffer`中的日志被刷新到磁盘上，`flushed_to_disk_lsn`的值也跟着增长。<span style="color:red">如果两者的值相同时，说明 log buffer 中的所有 redo 日志都已经刷新到磁盘中了</span>。
 
-```
+```sql
 小贴士：应用程序向磁盘写入文件时其实是先写到操作系统的缓冲区中去，如果某个写入操作要等到操作系统确认已经写到磁盘时才返回，那需要调用一下操作系统提供的fsync函数。其实只有当系统执行了fsync函数后，flushed_to_disk_lsn的值才会跟着增长，当仅仅把log buffer中的日志写入到操作系统缓冲区却没有显式的刷新到磁盘时，另外的一个称之为write_lsn的值跟着增长。不过为了大家理解上的方便，我们在讲述时把flushed_to_disk_lsn和write_lsn的概念混淆了起来。
-```
-
+```sql
 ### lsn 值和 redo 日志文件偏移量的对应关系
 
 因为`lsn`的值是代表系统写入的`redo`日志量的一个总和，一个`mtr`中产生多少日志，`lsn`的值就增加多少（当然有时候要加上`log block header`和`log block trailer`的大小），这样`mtr`产生的日志写到磁盘中时，很容易计算某一个`lsn`值在`redo`日志文件组中的偏移量，如图：
@@ -237,7 +234,7 @@
 
 我们可以使用`SHOW ENGINE INNODB STATUS`命令查看当前`InnoDB`存储引擎中的各种`LSN`值的情况，比如：
 
-```
+```sql
 mysql> SHOW ENGINE INNODB STATUS\G
 
 (...省略前面的许多状态)
@@ -251,8 +248,7 @@ Last checkpoint at  124052494
 24 log i/o's done, 2.00 log i/o's/second
 ----------------------
 (...省略后边的许多状态)
-```
-
+```sql
 其中：
 
 - `Log sequence number`：代表系统中的`lsn`值，也就是当前系统已经写入的`redo`日志量，包括写入`log buffer`中的日志。
@@ -317,10 +313,9 @@ Last checkpoint at  124052494
 
 我们前面说过，对于实际存储`redo`日志的普通的`log block`来说，在`log block header`处有一个称之为`LOG_BLOCK_HDR_NO`的属性（忘记了的话回头再看看），我们说这个属性代表一个唯一的标号。这个属性是初次使用该 block 时分配的，跟当时的系统`lsn`值有关。使用下面的公式计算该 block 的`LOG_BLOCK_HDR_NO`值：
 
-```
+```sql
 ((lsn / 512) & 0x3FFFFFFFUL) + 1
-```
-
+```sql
 这个公式里的`0x3FFFFFFFUL`可能让大家有点困惑，其实它的二进制表示可能更亲切一点：
 
 ![][21-23]

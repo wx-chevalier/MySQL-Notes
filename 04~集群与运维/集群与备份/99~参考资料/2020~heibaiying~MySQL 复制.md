@@ -27,8 +27,7 @@ binlog-format 和 binlog_row_image 的默认值可能在不同版本存在差异
 ```sql
 show variables like 'binlog_format';
 show variables like 'binlog_row_image';
-```
-
+```sql
 ## 二、基于二进制日志的复制
 
 ### 2.1 复制原理
@@ -53,8 +52,7 @@ MySQL 的复制原理如下图所示：
 server-id = 226
 # 开启二进制日志
 log-bin=mysql-bin
-```
-
+```sql
 在备份节点配置中继日志：
 
 ```properties
@@ -68,15 +66,13 @@ read_only = 1
 log-bin = mysql-bin
 # 是否将中继节点收到的复制事件写到自己的二进制日志中
 log_slave_updates = 1
-```
-
+```sql
 登录主节点 MySQL 服务，创建用于进行复制账号，并为其授予权限：
 
 ```shell
 CREATE USER 'repl'@'192.168.0.%' IDENTIFIED WITH mysql_native_password BY '123456';
 GRANT REPLICATION SLAVE on *.* TO 'repl'@'192.168.0.%' ;
-```
-
+```sql
 查看主节点二进制日志的状态：
 
 ```shell
@@ -86,8 +82,7 @@ mysql> SHOW MASTER STATUS;
 +------------------+----------+--------------+------------------+-------------------+
 | mysql-bin.000001 |      887 |              |                  |                   |
 +------------------+----------+--------------+------------------+-------------------+
-```
-
+```sql
 基于日志和偏移量，建立复制链路：
 
 ```shell
@@ -96,14 +91,12 @@ CHANGE MASTER TO MASTER_HOST='192.168.0.226',\
         MASTER_PASSWORD='123456',\
         MASTER_LOG_FILE='mysql-bin.000001',\
         MASTER_LOG_POS=887;
-```
-
+```sql
 开始复制：
 
 ```shell
 START SLAVE;
-```
-
+```sql
 查看从节点复制状态，主要参数有 Slave_IO_Running 和 Slave_SQL_Running，其状态都为 Yes 表示用于复制的 IO 进程已经开启。Seconds_Behind_Master 参数表示从节点复制的延迟量。此时可以在主库上进行任意更改，并在备库上查看情况。
 
 ```shell
@@ -170,8 +163,7 @@ Master_SSL_Verify_Server_Cert: No
         Get_master_public_key: 0
             Network_Namespace:
 1 row in set (0.00 sec)
-```
-
+```sql
 ### 2.3 优缺点
 
 基于二进制日志的复制是 MySQL 最早使用的复制技术，因此 MySQL 对其的支持比较完善，对执行修改的 SQL 语句几乎没有任何限制。其主要的缺点是在一主多从的高可用复制架构中，如果主库发生宕机，此时想要自动通过从库的日志和偏移量来确定新的主库比较困难。
@@ -190,14 +182,12 @@ MySQL 5.6 版本之后提供了一个新的复制模式：基于 GTID 的复制�
 gtid-mode = ON
 # 防止执行不受支持的语句，下文会有说明
 enforce-gtid-consistency = ON
-```
-
+```sql
 如果配置过上面的基于二进制日志的复制，还需要在从服务器上执行以下命令，关闭原有复制链路：
 
 ```shell
 STOP SLAVE IO_THREAD FOR CHANNEL '';
-```
-
+```sql
 建立新的基于 GTID 复制链路，指定 `MASTER_AUTO_POSITION = 1` 表示由程序来自动确认开始同步的 GTID 的位置：
 
 ```shell
@@ -205,14 +195,12 @@ CHANGE MASTER TO MASTER_HOST='192.168.0.226',\
         MASTER_USER='repl',
         MASTER_PASSWORD='123456',
         MASTER_AUTO_POSITION=1;
-```
-
+```sql
 开始复制：
 
 ```shell
 START SLAVE;
-```
-
+```sql
 在主节点上执行任意修改操作，并查看从节点状态，关键的输出如下：Retrieved_Gtid_Set 代表从主节点上接收到的两个事务，Executed_Gtid_Set 表示这两个事务已经在从库上得到执行。
 
 ```sql
@@ -222,8 +210,7 @@ Master_UUID            : e1148574-bdd0-11e9-8873-0800273acbfd
 Retrieved_Gtid_Set    : e1148574-bdd0-11e9-8873-0800273acbfd:1-2
 Executed_Gtid_Set    : e1148574-bdd0-11e9-8873-0800273acbfd:1-2
 .....
-```
-
+```sql
 ### 2.3 优缺点
 
 GTID 复制的优点在于程序可以自动确认开始复制的 GTID 点。但其仍然存在以下限制：
@@ -246,8 +233,7 @@ MySQL 从 5.5 之后开始以插件的形式支持半同步复制，所以先需
 mysql> INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
 -- 从节点上执行
 mysql> INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
-```
-
+```sql
 如果你的复制是基于高可用架构的，即从节点可能会在主节点宕机后成为新的主节点，而原主节点可能在失败恢复后成为从节点，那么为了保证半同步复制仍然有效，此时可以在主从节点上都安装主从插件。安装后使用以下命令查看是否安装成功：
 
 ```shell
@@ -258,8 +244,7 @@ mysql> SELECT PLUGIN_NAME, PLUGIN_STATUS FROM INFORMATION_SCHEMA.PLUGINS WHERE P
 | rpl_semi_sync_master | ACTIVE        |
 | rpl_semi_sync_slave  | ACTIVE        |
 +----------------------+---------------+
-```
-
+```sql
 #### 2. 配置半同步复制
 
 半同步复制可以基于日志复制或 GTID 复制开启，只需要在其原有配置上增加以下配置：
@@ -269,7 +254,6 @@ mysql> SELECT PLUGIN_NAME, PLUGIN_STATUS FROM INFORMATION_SCHEMA.PLUGINS WHERE P
 plugin-load=rpl_semi_sync_master=semisync_master.so
 rpl_semi_sync_master_enabled=1
 
-
 # 从节点上增加如下配置：
 plugin-load=rpl_semi_sync_slave=semisync_slave.so
 rpl_semi_sync_slave_enabled=1
@@ -278,8 +262,7 @@ rpl_semi_sync_slave_enabled=1
 plugin-load = "rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so"
 rpl-semi-sync-master-enabled = 1
 rpl-semi-sync-slave-enabled = 1
-```
-
+```sql
 #### 3. 启动复制
 
 按照二进制日志或 GTID 的方式正常启动复制即可，此时可以使用如下命令查看半同步日志是否正在执行：
@@ -300,8 +283,7 @@ mysql> SHOW STATUS LIKE 'Rpl_semi_sync_slave_status';
 +----------------------------+-------+
 | Rpl_semi_sync_slave_status | ON    |
 +----------------------------+-------+
-```
-
+```sql
 值为 ON 代表半同步复制配置成功。
 
 #### 4. 可选配置
@@ -320,8 +302,7 @@ mysql> SHOW VARIABLES LIKE 'rpl_semi_sync_master_wait_point';
 +---------------------------------+------------+
 | rpl_semi_sync_master_wait_point | AFTER_SYNC |
 +---------------------------------+------------+
-```
-
+```sql
 虽然半同步复制能够最大程度的避免数据的丢失，但是因为网络通讯会导致额外的等待时间的开销，所以尽量在低延迟的网络环境下使用，如处于同一机房的主机之间。
 
 ## 五、高可用架构

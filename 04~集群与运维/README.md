@@ -13,8 +13,7 @@ ADD COLUMN `state_code` int NOT NULL DEFAULT 86 COMMENT '国家地区编码',
 ADD UNIQUE KEY `uk_crew_mobile` (`crew_id`,`state_code`,`user_mobile`,`deletion_flag`),
 ADD UNIQUE KEY `uk_user_account_id` (`crew_id`,`user_account_id`,`deletion_flag`),
 ADD KEY `idx_user_account_id` (`user_account_id`);
-```
-
+```sql
 执行结果发现现有数据库中违反规则的数据都被删除了。在 Binlog 中可以发现如下的踪迹：
 
 ```sh
@@ -23,8 +22,7 @@ ADD KEY `idx_user_account_id` (`user_account_id`);
 SET TIMESTAMP=1571986840/*!*/;
 
 /* query from idb-toolkit */ /* rename-8883761-2513873 */RENAME TABLE `crew`.`user` to `crew`.`tp_8883761_del_user`, `crew`.`tp_8883761_ogt_user` to `crew`.`user`
-```
-
+```sql
 早在 mysql 5.6 推出以前，执行 DDL ALTER TABLE 变更会锁表，如果数据量很大的情况下，会直接导致业务不可用。mysql5.6 开始，引入 onlineDDL，并不会直接执行变更语句 alter table user add xx，大致流程为：
 
 - 创建临时表 create table tp_xxxx_ogt_user

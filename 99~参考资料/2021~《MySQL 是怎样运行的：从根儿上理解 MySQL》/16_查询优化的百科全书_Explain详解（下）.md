@@ -335,7 +335,7 @@
 
 这样我们就可以得到一个`json`格式的执行计划，里边儿包含该计划花费的成本，比如这样：
 
-```
+```sql
 mysql> EXPLAIN FORMAT=JSON SELECT * FROM s1 INNER JOIN s2 ON s1.key1 = s2.key2 WHERE s1.common_field = 'a'\G
 *************************** 1. row ***************************
 
@@ -422,19 +422,17 @@ EXPLAIN: {
   }
 }
 1 row in set, 2 warnings (0.00 sec)
-```
-
+```sql
 我们使用`#`后边跟随注释的形式为大家解释了`EXPLAIN FORMAT=JSON`语句的输出内容，但是大家可能有疑问`"cost_info"`里边的成本看着怪怪的，它们是怎么计算出来的？先看`s1`表的`"cost_info"`部分：
 
-```
+```sql
 "cost_info": {
     "read_cost": "1840.84",
     "eval_cost": "193.76",
     "prefix_cost": "2034.60",
     "data_read_per_join": "1M"
 }
-```
-
+```sql
 - `read_cost`是由下面这两部分组成的：
   - `IO`成本
   - 检测`rows × (1 - filter)`条记录的`CPU`成本
@@ -453,32 +451,29 @@ EXPLAIN: {
 
 - `data_read_per_join`表示在此次查询中需要读取的数据量，我们就不多介绍这个了。
 
-```
+```sql
 小贴士：大家其实没必要关注MySQL为什么使用这么古怪的方式计算出read_cost和eval_cost，关注prefix_cost是查询s1表的成本就好了。
-```
-
+```sql
 对于`s2`表的`"cost_info"`部分是这样的：
 
-```
+```sql
 "cost_info": {
     "read_cost": "968.80",
     "eval_cost": "193.76",
     "prefix_cost": "3197.16",
     "data_read_per_join": "1M"
 }
-```
-
+```sql
 由于`s2`表是被驱动表，所以可能被读取多次，这里的`read_cost`和`eval_cost`是访问多次`s2`表后累加起来的值，大家主要关注里边儿的`prefix_cost`的值代表的是整个连接查询预计的成本，也就是单次查询`s1`表和多次查询`s2`表后的成本的和，也就是：
 
-```
+```sql
 968.80 + 193.76 + 2034.60 = 3197.16
-```
-
+```sql
 ## Extented EXPLAIN
 
 最后，设计`MySQL`的大佬还为我们留了个彩蛋，在我们使用`EXPLAIN`语句查看了某个查询的执行计划后，紧接着还可以使用`SHOW WARNINGS`语句查看与这个查询的执行计划有关的一些扩展信息，比如这样：
 
-```
+```sql
 mysql> EXPLAIN SELECT s1.key1, s2.key1 FROM s1 LEFT JOIN s2 ON s1.key1 = s2.key1 WHERE s2.common_field IS NOT NULL;
 +----+-------------+-------+------------+------+---------------+----------+---------+-------------------+------+----------+-------------+
 | id | select_type | table | partitions | type | possible_keys | key      | key_len | ref               | rows | filtered | Extra       |
@@ -494,8 +489,7 @@ mysql> SHOW WARNINGS\G
    Code: 1003
 Message: /* select#1 */ select `xiaohaizi`.`s1`.`key1` AS `key1`,`xiaohaizi`.`s2`.`key1` AS `key1` from `xiaohaizi`.`s1` join `xiaohaizi`.`s2` where ((`xiaohaizi`.`s1`.`key1` = `xiaohaizi`.`s2`.`key1`) and (`xiaohaizi`.`s2`.`common_field` is not null))
 1 row in set (0.00 sec)
-```
-
+```sql
 大家可以看到`SHOW WARNINGS`展示出来的信息有三个字段，分别是`Level`、`Code`、`Message`。我们最常见的就是`Code`为`1003`的信息，当`Code`值为`1003`时，`Message`字段展示的信息<span style="color:red">类似于</span>查询优化器将我们的查询语句重写后的语句。比如我们上面的查询本来是一个左（外）连接查询，但是有一个`s2.common_field IS NOT NULL`的条件，着就会导致查询优化器把左（外）连接查询优化为内连接查询，从`SHOW WARNINGS`的`Message`字段也可以看出来，原本的`LEFT JOIN`已经变成了`JOIN`。
 
 但是大家一定要注意，我们说`Message`字段展示的信息<span style="color:red">类似于</span>查询优化器将我们的查询语句重写后的语句，并不是等价于，也就是说`Message`字段展示的信息并不是标准的查询语句，在很多情况下并不能直接拿到黑框框中运行，它只能作为帮助我们理解查`MySQL`将如何执行查询语句的一个参考依据而已。

@@ -49,8 +49,7 @@ mycat
 │   ├── server.xml
 ├── logs          #日志存放目录
 └── version.txt   #版本信息
-```
-
+```sql
 ## 四、Mycat 基本配置
 
 在 Mycat 的安装目录的 `conf` 目录下，有以下三个核心配置文件：
@@ -101,22 +100,19 @@ mycat
     <property name="schemas">TESTDB</property>
     <property name="readOnly">true</property>
 </user>
-```
-
+```sql
 在上面的示例中，用户配置的是明文密码，这样会存在安全隐患，因此 Mycat 也支持对密码进行加密，示例如下：
 
 ```shell
 # 该jar包在Mycat安装目录的lib目录下
 shell > java -cp Mycat-server-1.6.7.1-release.jar  io.mycat.util.DecryptUtil 0:root:123456
 GO0bnFVWrAuFgr1JMuMZkvfDNyTpoiGU7n/Wlsa151CirHQnANVk3NzE3FErx8v6pAcO0ctX3xFecmSr+976QA==
-```
-
+```sql
 可以将明文密码替换为加密密码，但此时还需在对应用户的 user 标签下增加如下配置，代表启用加密功能：
 
 ```xml
 <property name="usingDecrypt">1</property>
-```
-
+```sql
 ### 4.2 schema.xml
 
 下面是一个示例的 schema.xml 配置文件，主要包含以下标签：
@@ -146,8 +142,7 @@ GO0bnFVWrAuFgr1JMuMZkvfDNyTpoiGU7n/Wlsa151CirHQnANVk3NzE3FErx8v6pAcO0ctX3xFecmSr
 </dataHost>
 
 ...... 省略 cluster02，cluster03
-```
-
+```sql
 这里解释一下 dataHost 标签的相关属性：maxCon 表示最大连接数，minCon 表示最小连接数，dbType 表示数据库类型 ( 如 mysql、oracle 等)，其他属性都有多个可选值，具体如下：
 
 - **dbDriver**：数据库类型，可选的值有 native 和 JDBC，如果是 mysql，maridb，postgresql 等数据库，直接可以使用 native 即可。其他数据库则需要将对应的驱动包拷贝到 Mycat 安装目录的 lib 目录下，并写上完整的驱动类的类名。
@@ -184,8 +179,7 @@ rule.xml 文件中定义的是分片规则，主要包含以下标签：
     <!-- nodes 节点的数量-->
     <property name="count">3</property>
 </function>
-```
-
+```sql
 Mycat 内置支持十几种分片算法，如 取模分片，枚举分片，范围分片，字符串 hash 分片，一致性 hash 分片，日期分片等。关于这些分片算法的详细说明可以参考官方文档：[Mycat 官方指南](http://www.mycat.io/document/mycat-definitive-guide.pdf)
 
 ## 五、Mycat 读写分离
@@ -204,8 +198,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
                   password="123456" />
     </writeHost>
 </dataHost>
-```
-
+```sql
 但是需要注意的是如上的配置还是会存在单点问题，因为只有一个 writeHost ，Mycat 支持配置多个 writeHost，示例如下：
 
 ```xml
@@ -218,8 +211,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
               password="123456" />
 </writeHost>
 <writeHost host="Slave3" url="hostname4:3306" user="root" password="123456" />
-```
-
+```sql
 以上是 Mycat 官方指南中给出的配置，即在一主三从的复制架构下，可以选择其中一个 Slave 为备用的写入节点，此时当 Master 节点宕机后，会继续在该备用节点执行写入操作。这个配置和架构存在以下两个问题：
 
 - 第一 Mycat 并不能让 Slave 1 和 Slave 2 自动将自己的复制主节点变更为 Slave 3，这个过程仍需要你自己来实现。
@@ -256,8 +248,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
     <property name="schemas">ec_shop</property>
     <property name="usingDecrypt">1</property>
 </user>
-```
-
+```sql
 ### 6.2 schema.xml
 
 这里使用 childTable 来将订单表和订单明细表定义为 ER 表，避免跨分片查询。并将地址表 area_info 使用 `type="global"` 声明为全局，同样也是为了避免跨分片查询：
@@ -276,7 +267,6 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
         </table>
         <table name="area_info" primaryKey="area_id" type="global" dataNode="dn01,dn02,dn03,dn04"/>
     </schema>
-
 
     <dataNode name="dn01" dataHost="host01" database="ec_shop_customer"/>
     <dataNode name="dn02" dataHost="host02" database="ec_shop_product"/>
@@ -308,8 +298,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
     </dataHost>
 
 </mycat:schema>
-```
-
+```sql
 ### 6.3 rule.xml
 
 定义订单表所使用的分片规则，这里使用取模算法作为示例：
@@ -329,8 +318,7 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
         <property name="count">2</property>
     </function>
 </mycat:rule>
-```
-
+```sql
 ## 七、Mycat 与 MySQL 8.0
 
 这里我后端使用的数据库是 MySQL 8.0.17 ，相比于使用 MySQL 5.6 或 5.7 来整合 Mycat ，多了一些注意事项，主要如下：
@@ -341,15 +329,13 @@ Mycat 读写分离的配置非常简单，只需要通过配置 balance，writeH
 
 ```shell
 Access denied for user 'xxx', because password is error
-```
-
+```sql
 这是由于从 MySQL 8.0.4 开始使用 `caching_sha2_password` 作为认证的插件，而之前版本的插件为 `mysql_native_password`，我在测试中使用的 Mycat 版本为 1.6.7，它并不支持 `caching_sha2_password` 。因此在登录时候需要通过 `--default_auth` 来指定使用原有的认证插件：
 
 ```shell
 # 1.6.7 版本 Mycat 默认的连接端口号为 8066
 mysql -uheibaiying -p -h127.0.0.1 -P8066 --default_auth=mysql_native_password
-```
-
+```sql
 ### 7.2 数据库连接失败
 
 Mycat 和 MySQL 都正常启动，但是在 Mycat 上执行 SQL 语句失败，提示无效的数据库。此时可以查看 Mycat logs 目录下的 mycat.log 文件，通常会出现下面所示的异常：
@@ -358,15 +344,13 @@ Mycat 和 MySQL 都正常启动，但是在 Mycat 上执行 SQL 语句失败，�
 (io.mycat.backend.mysql.nio.MySQLConnectionAuthenticator.handle(MySQLConnectionAuthenticator.java:91)
 - can't connect to mysql server ,errmsg:Client does not support authentication protocol requested by
 server; consider upgrading MySQL client MySQLConnection
-```
-
+```sql
 这和上面是同样的原因，都是因为认证插件而导致的问题。此时需要修改账户所使用的认证插件：
 
 ```sql
 ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'xxxx';
 FLUSH PRIVILEGES;
-```
-
+```sql
 修改后可以使用如下命令进行查看：
 
 ```sql
@@ -381,8 +365,7 @@ mysql> SELECT Host,User,plugin FROM mysql.user;
 | localhost     | mysql.sys        | caching_sha2_password |
 | localhost     | root             | mysql_native_password |
 +---------------+------------------+-----------------------+
-```
-
+```sql
 之后再重启 Mycat 服务就可以正常连接。
 
 ## 参考资料
