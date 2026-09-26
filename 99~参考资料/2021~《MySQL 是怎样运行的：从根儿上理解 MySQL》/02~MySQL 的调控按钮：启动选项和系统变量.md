@@ -503,14 +503,6 @@ mysql> SHOW SESSION VARIABLES LIKE 'default_storage_engine';
 +------------------------+--------+
 1 row in set (0.00 sec)
 
-mysql> SHOW GLOBAL VARIABLES LIKE 'default_storage_engine';
-+------------------------+--------+
-| Variable_name          | Value  |
-+------------------------+--------+
-| default_storage_engine | InnoDB |
-+------------------------+--------+
-1 row in set (0.00 sec)
-
 mysql>
 ```
 可以看到，最初`default_storage_engine`的系统变量无论是在`GLOBAL`作用范围上还是在`SESSION`作用范围上的值都是`InnoDB`，我们在`SESSION`作用范围把它的值设置为`MyISAM`之后，可以看到`GLOBAL`作用范围的值并没有改变。

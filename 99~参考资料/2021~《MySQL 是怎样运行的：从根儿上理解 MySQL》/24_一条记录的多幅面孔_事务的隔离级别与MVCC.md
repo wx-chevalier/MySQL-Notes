@@ -399,16 +399,6 @@ BEGIN;
 # 使用REPEATABLE READ隔离级别的事务
 BEGIN;
 
-# SELECT1：Transaction 100、200未提交
-SELECT * FROM hero WHERE number = 1; # 得到的列name的值为'刘备'
-```
-这个`SELECT1`的执行过程如下：
-
-- 在执行`SELECT`语句时会先生成一个`ReadView`，`ReadView`的`m_ids`列表的内容就是`[100, 200]`，`min_trx_id`为`100`，`max_trx_id`为`201`，`creator_trx_id`为`0`。
-- 然后从版本链中挑选可见的记录，从图中可以看出，最新版本的列`name`的内容是`'张飞'`，该版本的`trx_id`值为`100`，在`m_ids`列表内，所以不符合可见性要求，根据`roll_pointer`跳到下一个版本。
-- 下一个版本的列`name`的内容是`'关羽'`，该版本的`trx_id`值也为`100`，也在`m_ids`列表内，所以也不符合要求，继续跳到下一个版本。
-- 下一个版本的列`name`的内容是`'刘备'`，该版本的`trx_id`值为`80`，小于`ReadView`中的`min_trx_id`值`100`，所以这个版本是符合要求的，最后返回给用户的版本就是这条列`name`为`'刘备'`的记录。
-
 之后，我们把`事务id`为`100`的事务提交一下，就像这样：
 
 ```sql
